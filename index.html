@@ -588,7 +588,7 @@
 <!-- NAV -->
 <nav>
   <div class="nav-inner">
-    <a href="#" class="nav-logo">
+    <a href="index.html" class="nav-logo">
       <svg class="logo-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
         <line x1="18" y1="8" x2="8" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
         <line x1="30" y1="8" x2="20" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
@@ -598,9 +598,9 @@
     </a>
     <ul class="nav-links">
       <li><a href="#como-funciona">Como funciona</a></li>
-      <li><a href="#prestadores">Prestadores</a></li>
+      <li><a href="busca.html">Prestadores</a></li>
       <li><a href="#solicitar">Solicitar serviço</a></li>
-      <li><a href="#solicitar" class="nav-cta">Encontrar máquina</a></li>
+      <li><a href="busca.html" class="nav-cta">Encontrar máquina</a></li>
     </ul>
   </div>
 </nav>
@@ -760,7 +760,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="nav-inner">
-    <a href="#" class="nav-logo" style="text-decoration:none">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">
       <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
         <line x1="18" y1="8" x2="8" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
         <line x1="30" y1="8" x2="20" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
@@ -992,6 +992,9 @@ function openModal(p) {
     <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem" onclick="submitContact()">
       Enviar mensagem
     </button>
+    <a href="prestador.html?id=${p.id}" style="display:block; text-align:center; margin-top:0.75rem; font-size:0.8rem; color:var(--blue-bright); text-decoration:none;">
+      Ver perfil completo →
+    </a>
   `;
   document.getElementById('modalOverlay').classList.add('open');
 }
