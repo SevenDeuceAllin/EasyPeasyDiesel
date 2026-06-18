@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acompanhamento de Serviço — Easy Peasy Diesel</title>
+
+<!-- SEGURANÇA -->
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net;
+  img-src 'self' data: blob: https://*.tile.openstreetmap.org;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.tile.openstreetmap.org;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()">
+<meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+  :root {
+    --bg-deep:    #060C1A;
+    --bg-card:    #0D1626;
+    --bg-surface: #0F1E35;
+    --blue-main:  #1A4ED8;
+    --blue-bright:#3B82F6;
+    --blue-pale:  #93C5FD;
+    --text-primary: #E8F0FF;
+    --text-muted:   #6B87B0;
+    --text-dim:     #3D5478;
+    --border:       rgba(59,130,246,0.15);
+    --border-hover: rgba(59,130,246,0.4);
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --green:  #34D399;
+    --yellow: #F59E0B;
+    --red:    #F87171;
+    --orange: #FB923C;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px; line-height: 1.65;
+    overflow-x: hidden; min-height: 100vh;
+  }
+  h1,h2,h3,h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; letter-spacing: 0.02em; line-height: 1.1;
+  }
+
+  .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+  /* NAV */
+  nav {
+    position: fixed; top:0; left:0; right:0; z-index:1000;
+    height: 68px;
+    background: rgba(6,12,26,0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .nav-inner {
+    max-width:1200px; margin:0 auto; padding:0 2rem;
+    height:100%; display:flex; align-items:center; justify-content:space-between;
+  }
+  .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .logo-icon { width:36px; height:36px; }
+  .logo-text {
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:1.25rem;
+    color:var(--text-primary); letter-spacing:0.04em; text-transform:uppercase;
+  }
+  .logo-text span { color:var(--blue-bright); }
+  .nav-links { display:flex; align-items:center; gap:2rem; list-style:none; }
+  .nav-links a {
+    text-decoration:none; color:var(--text-muted);
+    font-size:0.875rem; font-weight:500; transition:color 0.2s;
+  }
+  .nav-links a:hover { color:var(--text-primary); }
+  .nav-cta {
+    background:var(--blue-main); color:#fff !important;
+    padding:0.5rem 1.25rem; border-radius:var(--radius-sm);
+    transition:background 0.2s !important;
+  }
+  .nav-cta:hover { background:var(--blue-bright) !important; }
+
+  /* PAGE HEADER */
+  .page-header {
+    padding: 88px 0 0;
+    position: relative; overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+  .header-inner { padding: 2.5rem 0 0; position: relative; z-index:1; }
+
+  .breadcrumb {
+    display:flex; align-items:center; gap:8px;
+    font-size:0.78rem; color:var(--text-dim);
+    margin-bottom:1.5rem; letter-spacing:0.04em;
+  }
+  .breadcrumb a { color:var(--text-muted); text-decoration:none; transition:color 0.2s; }
+  .breadcrumb a:hover { color:var(--blue-bright); }
+
+  .page-title-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .page-title h1 { font-size: 2.4rem; margin-bottom: 0.4rem; }
+  .page-title p  { color: var(--text-muted); font-size: 0.9rem; font-weight: 300; }
+
+  /* CÓDIGO DO PEDIDO */
+  .order-code {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.875rem 1.25rem;
+    font-size: 0.8rem; color: var(--text-muted);
+  }
+  .order-code strong { color: var(--text-primary); font-family: monospace; font-size: 0.95rem; letter-spacing: 0.06em; }
+  .copy-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--blue-bright); font-size: 0.75rem;
+    font-weight: 600; padding: 0.2rem 0.5rem;
+    border-radius: 4px; transition: background 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .copy-btn:hover { background: rgba(59,130,246,0.12); }
+
+  /* MAIN LAYOUT */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    padding: 2rem 0 5rem;
+    align-items: start;
+  }
+
+  /* TIMELINE DE STATUS */
+  .timeline-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .timeline-header {
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .timeline-header h3 { font-size: 1.05rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
+  .status-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 0.3rem 0.875rem; border-radius: 99px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .status-chip.em-execucao { background: rgba(59,130,246,0.12); color: var(--blue-bright); border: 1px solid rgba(59,130,246,0.3); }
+  .status-chip.concluido   { background: rgba(52,211,153,0.12); color: var(--green);       border: 1px solid rgba(52,211,153,0.3); }
+  .status-chip.aguardando  { background: rgba(245,158,11,0.12); color: var(--yellow);      border: 1px solid rgba(245,158,11,0.3); }
+  .status-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-chip.em-execucao .status-chip-dot { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+
+  .timeline-body { padding: 1.75rem; }
+  .timeline { position: relative; }
+  .timeline-item {
+    display: flex; gap: 1.25rem;
+    padding-bottom: 2rem;
+    position: relative;
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+
+  /* LINHA CONECTORA */
+  .timeline-item:not(:last-child) .timeline-dot::after {
+    content: '';
+    position: absolute;
+    left: 14px; top: 32px;
+    width: 2px;
+    height: calc(100% - 8px);
+    background: var(--border);
+  }
+  .timeline-item.done:not(:last-child) .timeline-dot::after { background: var(--blue-main); }
+  .timeline-item.active:not(:last-child) .timeline-dot::after {
+    background: linear-gradient(to bottom, var(--blue-main), var(--border));
+  }
+
+  .timeline-dot {
+    position: relative; flex-shrink: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    border: 2px solid var(--border);
+    background: var(--bg-deep);
+    z-index: 1;
+  }
+  .timeline-item.done   .timeline-dot { background: var(--blue-main); border-color: var(--blue-main); }
+  .timeline-item.active .timeline-dot { background: var(--blue-main); border-color: var(--blue-bright); box-shadow: 0 0 0 4px rgba(59,130,246,0.2); }
+  .timeline-item.pending .timeline-dot { background: var(--bg-deep); border-color: var(--text-dim); }
+  .timeline-item.completed .timeline-dot { background: var(--green); border-color: var(--green); }
+
+  .timeline-content { flex: 1; padding-top: 4px; }
+  .timeline-label {
+    font-weight: 600; font-size: 0.95rem; margin-bottom: 3px;
+    color: var(--text-primary);
+  }
+  .timeline-item.pending .timeline-label { color: var(--text-dim); }
+  .timeline-desc { font-size: 0.82rem; color: var(--text-muted); font-weight: 300; line-height: 1.5; }
+  .timeline-time { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+  .timeline-badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.1); color: var(--blue-bright);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 99px; padding: 2px 10px;
+    font-size: 0.68rem; font-weight: 700;
+    margin-top: 6px; letter-spacing: 0.04em;
+  }
+  .timeline-badge.green { background: rgba(52,211,153,0.1); color: var(--green); border-color: rgba(52,211,153,0.2); }
+
+  /* BARRA DE PROGRESSO GERAL */
+  .progress-bar-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .progress-label span { font-size: 0.8rem; color: var(--text-muted); }
+  .progress-label strong { font-size: 0.875rem; color: var(--blue-bright); }
+  .progress-track {
+    height: 8px; background: var(--bg-deep);
+    border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue-main), var(--blue-bright));
+    border-radius: 99px;
+    transition: width 1s ease;
+  }
+  .progress-steps {
+    display: flex; justify-content: space-between;
+    margin-top: 0.625rem;
+  }
+  .progress-step-label {
+    font-size: 0.65rem; color: var(--text-dim);
+    text-align: center; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .progress-step-label.active { color: var(--blue-bright); font-weight: 700; }
+  .progress-step-label.done   { color: var(--text-muted); }
+
+  /* DETALHES DO SERVIÇO */
+  .detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .detail-card-header {
+    padding: 1.125rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0; 
+  }
+  .detail-cell {
+    padding: 1.125rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+  .detail-cell:nth-child(even) { border-right: none; }
+  .detail-cell:nth-last-child(-n+2) { border-bottom: none; }
+  .detail-cell-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+  .detail-cell-value { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+  .detail-cell-value.muted { color: var(--text-muted); font-weight: 400; }
+
+  /* MAPA */
+  #trackmap {
+    height: 220px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
+  .leaflet-container { background: var(--bg-deep) !important; }
+
+  /* HISTÓRICO DE MENSAGENS */
+  .messages-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .messages-header {
+    padding: 1.125rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .messages-header h3 { font-size: 1rem; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; }
+  .msg-list { padding: 1.25rem 1.75rem; display: flex; flex-direction: column; gap: 1rem; }
+  .msg-item { display: flex; gap: 10px; }
+  .msg-item.right { flex-direction: row-reverse; }
+  .msg-av {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 0.75rem; color: #fff; flex-shrink: 0;
+  }
+  .msg-bubble {
+    max-width: 75%;
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+  }
+  .msg-item.right .msg-bubble {
+    background: rgba(26,78,216,0.15);
+    border-color: rgba(59,130,246,0.2);
+  }
+  .msg-name  { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); margin-bottom: 3px; }
+  .msg-text  { font-size: 0.825rem; color: var(--text-primary); line-height: 1.5; }
+  .msg-time  { font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
+  .msg-input-row {
+    display: flex; gap: 8px; padding: 1rem 1.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .msg-input {
+    flex: 1; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-primary); padding: 0.625rem 0.875rem;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .msg-input:focus { border-color: var(--blue-bright); }
+  .msg-input::placeholder { color: var(--text-dim); }
+  .msg-send {
+    background: var(--blue-main); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+  }
+  .msg-send:hover { background: var(--blue-bright); }
+
+  /* SIDEBAR DIREITA */
+  .sidebar-sticky { position: sticky; top: 88px; }
+
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .info-card-header {
+    padding: 1.125rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim);
+  }
+  .info-rows { padding: 0.5rem 0; }
+  .info-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.625rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
+  .info-row-value { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+
+  /* PRESTADOR SIDEBAR */
+  .provider-sidebar {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .provider-sidebar-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 1rem; }
+  .provider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.125rem; }
+  .prov-av {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    font-size: 1rem; color: #fff; flex-shrink: 0;
+  }
+  .prov-name { font-weight: 600; font-size: 0.95rem; }
+  .prov-meta { font-size: 0.78rem; color: var(--text-muted); }
+  .prov-stars { color: var(--yellow); font-size: 0.75rem; }
+  .btn-prov {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; padding: 0.7rem;
+    background: transparent; color: var(--blue-bright);
+    border: 1px solid var(--border-hover); border-radius: var(--radius-sm);
+    font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: background 0.15s; font-family: 'Plus Jakarta Sans', sans-serif;
+    text-decoration: none;
+  }
+  .btn-prov:hover { background: rgba(59,130,246,0.08); }
+
+  /* DEMO SWITCHER */
+  .demo-switcher {
+    background: var(--bg-card);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .demo-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue-bright); margin-bottom: 0.875rem; }
+  .demo-btns { display: flex; flex-direction: column; gap: 6px; }
+  .demo-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-deep); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 0.6rem 0.875rem;
+    font-size: 0.78rem; cursor: pointer; transition: border-color 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-muted);
+    width: 100%; text-align: left;
+  }
+  .demo-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
+  .demo-btn.active { border-color: var(--blue-bright); color: var(--text-primary); background: rgba(26,78,216,0.1); }
+  .demo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* AVALIAÇÃO FINAL (aparece só no concluído) */
+  .rating-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+  .rating-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .rating-card p  { font-size: 0.825rem; color: var(--text-muted); margin-bottom: 1.25rem; font-weight: 300; }
+  .star-row { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+  .star-btn {
+    font-size: 2rem; cursor: pointer; color: var(--text-dim);
+    transition: color 0.15s, transform 0.1s; background: none; border: none;
+    line-height: 1;
+  }
+  .star-btn:hover, .star-btn.lit { color: var(--yellow); transform: scale(1.15); }
+  .rating-textarea {
+    width: 100%; background: var(--bg-deep);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-primary); padding: 0.75rem 1rem;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem;
+    outline: none; resize: vertical; min-height: 80px;
+    transition: border-color 0.2s; margin-bottom: 1rem;
+  }
+  .rating-textarea:focus { border-color: var(--blue-bright); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue-main); color: #fff;
+    padding: 0.75rem 1.75rem; border-radius: var(--radius-sm);
+    font-weight: 600; font-size: 0.9rem;
+    border: none; cursor: pointer;
+    transition: background 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
+    width: 100%; justify-content: center;
+  }
+  .btn-primary:hover { background: var(--blue-bright); }
+
+  /* FOOTER */
+  footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 2.5rem 0; }
+  footer .nav-inner { flex-wrap: wrap; gap: 1.5rem; }
+  .footer-copy { font-size: 0.8rem; color: var(--text-dim); }
+  .footer-copy a { color: var(--text-muted); text-decoration: none; }
+  .footer-tagline { font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+
+  /* RESPONSIVE */
+  @media (max-width: 960px) {
+    .main-layout { grid-template-columns: 1fr; }
+    .sidebar-sticky { position: static; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .container { padding: 0 1.25rem; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-cell { border-right: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <svg class="logo-icon" viewBox="0 0 80 80" fill="none">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text">easy peasy <span>diesel</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#como-funciona">Como funciona</a></li>
+      <li><a href="busca.html">Prestadores</a></li>
+      <li><a href="index.html#solicitar">Solicitar serviço</a></li>
+      <li><a href="busca.html" class="nav-cta">Encontrar máquina</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="container">
+    <div class="header-inner">
+      <div class="breadcrumb">
+        <a href="index.html">Início</a>
+        <span>›</span>
+        <a href="busca.html">Prestadores</a>
+        <span>›</span>
+        <span>Acompanhamento</span>
+      </div>
+      <div class="page-title-row">
+        <div class="page-title">
+          <h1>Acompanhamento de Serviço</h1>
+          <p>Acompanhe em tempo real o status do seu pedido.</p>
+        </div>
+        <div class="order-code">
+          Pedido <strong id="orderCode">EPD-2025-0042</strong>
+          <button class="copy-btn" onclick="copyCode()">Copiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+  <div class="main-layout">
+
+    <!-- COLUNA PRINCIPAL -->
+    <div>
+
+      <!-- BARRA DE PROGRESSO -->
+      <div class="progress-bar-wrap">
+        <div class="progress-label">
+          <span>Progresso geral</span>
+          <strong id="progressPct">50%</strong>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width:50%"></div>
+        </div>
+        <div class="progress-steps">
+          <span class="progress-step-label done"    id="lbl-0">Solicitado</span>
+          <span class="progress-step-label done"    id="lbl-1">Aceito</span>
+          <span class="progress-step-label active"  id="lbl-2">Em execução</span>
+          <span class="progress-step-label"         id="lbl-3">Concluído</span>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="timeline-card">
+        <div class="timeline-header">
+          <h3>Histórico de etapas</h3>
+          <span class="status-chip em-execucao" id="mainChip">
+            <span class="status-chip-dot"></span>
+            Em execução
+          </span>
+        </div>
+        <div class="timeline-body">
+          <div class="timeline" id="timeline"></div>
+        </div>
+      </div>
+
+      <!-- AVALIAÇÃO FINAL (visível só quando concluído) -->
+      <div class="rating-card" id="ratingCard">
+        <h3>Como foi o serviço?</h3>
+        <p>Sua avaliação ajuda outros clientes a encontrar os melhores prestadores do Vale do Aço.</p>
+        <div class="star-row" id="starRow">
+          <button class="star-btn" onclick="setStar(1)">★</button>
+          <button class="star-btn" onclick="setStar(2)">★</button>
+          <button class="star-btn" onclick="setStar(3)">★</button>
+          <button class="star-btn" onclick="setStar(4)">★</button>
+          <button class="star-btn" onclick="setStar(5)">★</button>
+        </div>
+        <textarea class="rating-textarea" placeholder="Conte como foi a experiência (opcional)..." maxlength="400"></textarea>
+        <button class="btn-primary" onclick="submitRating()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Enviar avaliação
+        </button>
+        <p style="text-align:center;color:var(--text-dim);font-size:0.72rem;margin-top:0.75rem">* Site demonstrativo</p>
+      </div>
+
+      <!-- DETALHES DO SERVIÇO -->
+      <div class="detail-card">
+        <div class="detail-card-header">Detalhes do serviço</div>
+        <div class="detail-grid">
+          <div class="detail-cell">
+            <div class="detail-cell-label">Tipo de serviço</div>
+            <div class="detail-cell-value">Escavação de fundação</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-cell-label">Equipamento</div>
+            <div class="detail-cell-value">Escavadeira hidráulica</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-cell-label">Data de início</div>
+            <div class="detail-cell-value">26 Mai 2025</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-cell-label">Previsão de conclusão</div>
+            <div class="detail-cell-value">27 Mai 2025</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-cell-label">Localização</div>
+            <div class="detail-cell-value muted">Horto, Ipatinga — MG</div>
+          </div>
+          <div class="detail-cell">
+            <div class="detail-cell-label">Área estimada</div>
+            <div class="detail-cell-value muted">80 m² · prof. 1,5 m</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAPA -->
+      <div id="trackmap"></div>
+
+      <!-- MENSAGENS -->
+      <div class="messages-card">
+        <div class="messages-header">
+          <h3>Mensagens</h3>
+          <span style="font-size:0.72rem;color:var(--text-dim)">Site demonstrativo</span>
+        </div>
+        <div class="msg-list" id="msgList">
+          <div class="msg-item">
+            <div class="msg-av" style="background:#1A4ED8">JM</div>
+            <div class="msg-bubble">
+              <div class="msg-name">João Máquinas</div>
+              <div class="msg-text">Olá! Confirmo o serviço para amanhã às 7h. Vou chegar com a escavadeira e mais um auxiliar.</div>
+              <div class="msg-time">26/05 — 14:32</div>
+            </div>
+          </div>
+          <div class="msg-item right">
+            <div class="msg-av" style="background:#3730A3">Eu</div>
+            <div class="msg-bubble">
+              <div class="msg-name">Você</div>
+              <div class="msg-text">Ótimo, estarei lá! O portão lateral estará aberto.</div>
+              <div class="msg-time">26/05 — 14:45</div>
+            </div>
+          </div>
+          <div class="msg-item">
+            <div class="msg-av" style="background:#1A4ED8">JM</div>
+            <div class="msg-bubble">
+              <div class="msg-name">João Máquinas</div>
+              <div class="msg-text">Cheguei ao local e estou começando a escavação. Tudo dentro do planejado.</div>
+              <div class="msg-time">27/05 — 07:15</div>
+            </div>
+          </div>
+        </div>
+        <div class="msg-input-row">
+          <input class="msg-input" id="msgInput" type="text" placeholder="Escreva uma mensagem..." maxlength="200" autocomplete="off" onkeydown="if(event.key==='Enter') sendMsg()">
+          <button class="msg-send" onclick="sendMsg()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR DIREITA -->
+    <div class="sidebar-sticky">
+
+      <!-- DEMO SWITCHER -->
+      <div class="demo-switcher">
+        <div class="demo-title">⚡ Demonstração — Trocar status</div>
+        <div class="demo-btns">
+          <button class="demo-btn" onclick="setStatus(0)" id="dBtn0">
+            <span class="demo-dot" style="background:var(--yellow)"></span>
+            Solicitado
+          </button>
+          <button class="demo-btn" onclick="setStatus(1)" id="dBtn1">
+            <span class="demo-dot" style="background:var(--blue-bright)"></span>
+            Aceito
+          </button>
+          <button class="demo-btn active" onclick="setStatus(2)" id="dBtn2">
+            <span class="demo-dot" style="background:var(--blue-bright)"></span>
+            Em execução
+          </button>
+          <button class="demo-btn" onclick="setStatus(3)" id="dBtn3">
+            <span class="demo-dot" style="background:var(--green)"></span>
+            Concluído
+          </button>
+        </div>
+      </div>
+
+      <!-- PRESTADOR -->
+      <div class="provider-sidebar">
+        <div class="provider-sidebar-title">Prestador responsável</div>
+        <div class="provider-row">
+          <div class="prov-av" style="background:#1A4ED8">JM</div>
+          <div>
+            <div class="prov-name">João Máquinas</div>
+            <div class="prov-meta">Escavadeira · Ipatinga</div>
+            <div class="prov-stars">★★★★★ <span style="color:var(--text-dim);font-size:0.72rem">4.9</span></div>
+          </div>
+        </div>
+        <a href="prestador.html?id=1" class="btn-prov">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Ver perfil completo
+        </a>
+      </div>
+
+      <!-- RESUMO DO PEDIDO -->
+      <div class="info-card">
+        <div class="info-card-header">Resumo do pedido</div>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-row-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Solicitado em
+            </span>
+            <span class="info-row-value">25/05/2025</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Duração estimada
+            </span>
+            <span class="info-row-value">2 dias</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Local
+            </span>
+            <span class="info-row-value">Horto, Ipatinga</span>
+          </div>
+          <div class="info-row">
+            <span class="info-row-label">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Status atual
+            </span>
+            <span class="info-row-value" id="sideStatus" style="color:var(--blue-bright)">Em execução</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUPORTE -->
+      <div class="info-card">
+        <div class="info-card-header">Precisa de ajuda?</div>
+        <div style="padding:1.25rem 1.5rem">
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;font-weight:300">Em caso de dúvidas ou problemas com o serviço, entre em contato com o suporte.</p>
+          <button class="btn-prov" style="margin-bottom:0.5rem" onclick="alert('Site demonstrativo — suporte não disponível.')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.22 1.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.56-.56a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+            Falar com suporte
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">
+      <svg width="30" height="30" viewBox="0 0 80 80" fill="none">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#3B82F6" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text" style="font-size:1rem;">easy peasy <span>diesel</span></span>
+    </a>
+    <span class="footer-copy">© 2025 Easy Peasy Diesel · Projeto demonstrativo · <a href="#">Vale do Aço, MG</a></span>
+    <span class="footer-tagline">Máquinas pesadas sem complicação</span>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* SEGURANÇA */
+function s(str) { const d=document.createElement('div'); d.textContent=String(str??''); return d.innerHTML; }
+if (window.top !== window.self) { document.body.innerHTML=''; window.top.location=window.self.location; }
+
+/* ESTADOS DA TIMELINE */
+const STATES = [
+  {
+    key: 'solicitado', label: 'Solicitado', pct: 10,
+    chipClass: 'aguardando', chipLabel: 'Aguardando',
+    statusLabel: 'Solicitado', statusColor: 'var(--yellow)',
+    steps: [
+      { state:'active',   icon:'📋', label:'Pedido enviado',           desc:'Sua solicitação foi recebida pela plataforma e enviada ao prestador.',       time:'25/05/2025 — 16:22', badge:null },
+      { state:'pending',  icon:'⏳', label:'Aguardando confirmação',   desc:'O prestador ainda não confirmou o serviço.',                                  time:null,                 badge:null },
+      { state:'pending',  icon:'🚜', label:'Em execução',              desc:'O serviço ainda não foi iniciado.',                                            time:null,                 badge:null },
+      { state:'pending',  icon:'✅', label:'Concluído',                desc:'Aguardando execução.',                                                          time:null,                 badge:null },
+    ]
+  },
+  {
+    key: 'aceito', label: 'Aceito', pct: 30,
+    chipClass: 'aguardando', chipLabel: 'Aceito',
+    statusLabel: 'Aceito', statusColor: 'var(--yellow)',
+    steps: [
+      { state:'done',     icon:'📋', label:'Pedido enviado',           desc:'Sua solicitação foi recebida pela plataforma e enviada ao prestador.',       time:'25/05/2025 — 16:22', badge:null },
+      { state:'active',   icon:'🤝', label:'Serviço confirmado',       desc:'João Máquinas confirmou o serviço para 26/05 às 07h00.',                      time:'25/05/2025 — 17:10', badge:'Confirmado' },
+      { state:'pending',  icon:'🚜', label:'Em execução',              desc:'O serviço ainda não foi iniciado.',                                            time:null,                 badge:null },
+      { state:'pending',  icon:'✅', label:'Concluído',                desc:'Aguardando execução.',                                                          time:null,                 badge:null },
+    ]
+  },
+  {
+    key: 'em-execucao', label: 'Em execução', pct: 60,
+    chipClass: 'em-execucao', chipLabel: 'Em execução',
+    statusLabel: 'Em execução', statusColor: 'var(--blue-bright)',
+    steps: [
+      { state:'done',     icon:'📋', label:'Pedido enviado',           desc:'Sua solicitação foi recebida pela plataforma e enviada ao prestador.',        time:'25/05/2025 — 16:22', badge:null },
+      { state:'done',     icon:'🤝', label:'Serviço confirmado',       desc:'João Máquinas confirmou o serviço para 26/05 às 07h00.',                      time:'25/05/2025 — 17:10', badge:null },
+      { state:'active',   icon:'🚜', label:'Em execução',              desc:'João Máquinas chegou ao local e iniciou a escavação da fundação.',             time:'26/05/2025 — 07:15', badge:'Ao vivo' },
+      { state:'pending',  icon:'✅', label:'Conclusão prevista',       desc:'Previsão de término: 27/05/2025.',                                              time:null,                 badge:null },
+    ]
+  },
+  {
+    key: 'concluido', label: 'Concluído', pct: 100,
+    chipClass: 'concluido', chipLabel: 'Concluído',
+    statusLabel: 'Concluído', statusColor: 'var(--green)',
+    steps: [
+      { state:'done',      icon:'📋', label:'Pedido enviado',          desc:'Sua solicitação foi recebida pela plataforma.',                               time:'25/05/2025 — 16:22', badge:null },
+      { state:'done',      icon:'🤝', label:'Serviço confirmado',      desc:'João Máquinas confirmou o serviço para 26/05 às 07h00.',                     time:'25/05/2025 — 17:10', badge:null },
+      { state:'done',      icon:'🚜', label:'Serviço executado',       desc:'Escavação concluída com sucesso. Área preparada conforme especificado.',      time:'27/05/2025 — 11:45', badge:null },
+      { state:'completed', icon:'✅', label:'Serviço concluído',       desc:'Serviço finalizado e entregue. Agradecemos pela confiança!',                  time:'27/05/2025 — 12:00', badge:'Concluído' },
+    ]
+  },
+];
+
+let currentStatus = 2; // começa em "Em execução"
+
+function setStatus(idx) {
+  currentStatus = idx;
+  const state = STATES[idx];
+
+  // Progresso
+  document.getElementById('progressFill').style.width = state.pct + '%';
+  document.getElementById('progressPct').textContent  = state.pct + '%';
+
+  // Labels da barra
+  ['Solicitado','Aceito','Em execução','Concluído'].forEach((lbl, i) => {
+    const el = document.getElementById('lbl-' + i);
+    el.className = 'progress-step-label';
+    if (i < idx)  el.classList.add('done');
+    if (i === idx) el.classList.add('active');
+  });
+
+  // Chip principal
+  const chip = document.getElementById('mainChip');
+  chip.className = 'status-chip ' + state.chipClass;
+  chip.innerHTML = `<span class="status-chip-dot"></span>${s(state.chipLabel)}`;
+
+  // Status sidebar
+  const ss = document.getElementById('sideStatus');
+  ss.textContent = state.statusLabel;
+  ss.style.color = state.statusColor;
+
+  // Timeline
+  renderTimeline(state.steps);
+
+  // Demo btns
+  document.querySelectorAll('.demo-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+
+  // Avaliação (só no concluído)
+  const rc = document.getElementById('ratingCard');
+  rc.style.display = idx === 3 ? 'block' : 'none';
+}
+
+function renderTimeline(steps) {
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = steps.map(step => `
+    <div class="timeline-item ${s(step.state)}">
+      <div class="timeline-dot">
+        ${step.state === 'done' || step.state === 'completed'
+          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+          : step.state === 'active'
+            ? '<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" fill="#fff"/></svg>'
+            : ''}
+      </div>
+      <div class="timeline-content">
+        <div class="timeline-label">${s(step.label)}</div>
+        <div class="timeline-desc">${s(step.desc)}</div>
+        ${step.time ? `<div class="timeline-time">${s(step.time)}</div>` : ''}
+        ${step.badge ? `<span class="timeline-badge ${step.badge === 'Concluído' ? 'green' : ''}">${s(step.badge)}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+/* MAPA */
+function initMap() {
+  const map = L.map('trackmap', { zoomControl:false, scrollWheelZoom:false, dragging:false }).setView([-19.4637, -42.5327], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:18 }).addTo(map);
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:32px;height:32px;border-radius:50%;background:#1A4ED8;border:3px solid #3B82F6;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.7rem;color:#fff;box-shadow:0 0 0 4px rgba(59,130,246,0.25),0 2px 8px rgba(0,0,0,0.5)">JM</div>`,
+    iconSize:[32,32], iconAnchor:[16,16]
+  });
+  L.marker([-19.4637,-42.5327],{icon}).addTo(map).bindPopup('<strong>João Máquinas</strong><br>Local do serviço · Horto, Ipatinga').openPopup();
+}
+
+/* MENSAGENS */
+function sendMsg() {
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  const list = document.getElementById('msgList');
+  const now  = new Date();
+  const time = `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')} — ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  list.insertAdjacentHTML('beforeend', `
+    <div class="msg-item right">
+      <div class="msg-av" style="background:#3730A3">Eu</div>
+      <div class="msg-bubble">
+        <div class="msg-name">Você</div>
+        <div class="msg-text">${s(text)}</div>
+        <div class="msg-time">${s(time)}</div>
+      </div>
+    </div>`);
+  input.value = '';
+  list.scrollTop = list.scrollHeight;
+}
+
+/* AVALIAÇÃO */
+let selectedStar = 0;
+function setStar(n) {
+  selectedStar = n;
+  document.querySelectorAll('.star-btn').forEach((btn,i) => btn.classList.toggle('lit', i < n));
+}
+function submitRating() {
+  const rc = document.getElementById('ratingCard');
+  rc.innerHTML = `
+    <div style="text-align:center;padding:1rem 0">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" style="display:block;margin:0 auto 1rem"><circle cx="28" cy="28" r="28" fill="rgba(52,211,153,0.12)"/><path d="M18 28l7 7 13-14" stroke="#34D399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h3 style="margin-bottom:0.5rem">Avaliação enviada!</h3>
+      <p style="color:var(--text-muted);font-size:0.85rem">Obrigado pelo feedback. Isso ajuda toda a comunidade do Vale do Aço.</p>
+    </div>`;
+}
+
+/* COPIAR CÓDIGO */
+function copyCode() {
+  const code = document.getElementById('orderCode').textContent;
+  navigator.clipboard?.writeText(code).catch(()=>{});
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copiado!';
+  setTimeout(() => { btn.textContent = 'Copiar'; }, 1500);
+}
+
+/* INIT */
+window.addEventListener('DOMContentLoaded', () => {
+  setStatus(2);
+  initMap();
+});
+</script>
+</body>
+</html>
