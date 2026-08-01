@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscar Prestadores — Easy Peasy Diesel</title>
+
+<!-- ═══════════════════════════════════════════════
+     SEGURANÇA — bloco idêntico ao do index.html
+     ═══════════════════════════════════════════════ -->
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net;
+  img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.tile.openstreetmap.org;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()">
+<meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+
+<!-- ═══════════════════════════════════════════════
+     NAVEGAÇÃO — esta página fica na MESMA pasta que
+     index.html, prestador.html etc. (raiz do repo).
+     Links para seções da home usam "index.html#âncora"
+     porque essas âncoras não existem NESTA página.
+     ═══════════════════════════════════════════════ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:        #F4F6FA;
+    --surface:      #FFFFFF;
+    --surface-2:    #EAEFF6;
+    --ink:          #0E1B2E;
+    --ink-muted:    #55647A;
+    --ink-dim:      #93A1B8;
+    --blue-main:    #1A4ED8;
+    --blue-bright:  #3B82F6;
+    --blue-pale:    #E3ECFF;
+    --border:       #DCE3EC;
+    --border-strong:#C2CEE0;
+    --green:        #0E7C4A;
+    --red:          #C4381F;
+    --amber:        #B7791F;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--blue-bright); outline-offset: 2px; }
+  .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+
+  /* NAV — bloco reutilizado do index.html */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: 68px;
+    background: rgba(244,246,250,0.92);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .nav-inner {
+    max-width: 1280px; margin: 0 auto; padding: 0 2rem; height: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .logo-icon { width: 38px; height: 38px; }
+  .logo-text {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.3rem;
+    color: var(--ink); letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .logo-text span { color: var(--blue-main); }
+  .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+  .nav-links a {
+    text-decoration: none; color: var(--ink-muted); font-size: 0.875rem;
+    font-weight: 500; transition: color 0.15s; letter-spacing: 0.03em;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a.active { color: var(--blue-main); font-weight: 600; }
+  .nav-cta {
+    background: var(--blue-main); color: #fff !important; padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-sm); transition: background 0.15s !important;
+  }
+  .nav-cta:hover { background: var(--blue-bright) !important; color: #fff !important; }
+
+  /* CABEÇALHO DE BUSCA */
+  .search-header { padding: 130px 0 2rem; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .search-eyebrow {
+    display: inline-block; background: var(--blue-pale); border: 1px solid rgba(26,78,216,0.18);
+    border-radius: 99px; padding: 0.35rem 0.9rem; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue-main); margin-bottom: 1rem;
+  }
+  .search-header h1 { font-size: clamp(1.9rem, 3.4vw, 2.6rem); margin-bottom: 1.5rem; max-width: 640px; }
+  .search-bar {
+    display: grid; grid-template-columns: 1fr 200px 200px auto; gap: 0.75rem;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 0.6rem;
+  }
+  .search-bar input, .search-bar select {
+    width: 100%; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--ink); padding: 0.7rem 0.9rem;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-bar input:focus, .search-bar select:focus { border-color: var(--blue-bright); }
+  .search-bar button {
+    background: var(--blue-main); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 0.7rem 1.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .search-bar button:hover { background: var(--blue-bright); }
+  @media (max-width: 800px) {
+    .search-bar { grid-template-columns: 1fr; }
+    .search-header { padding: 110px 0 1.5rem; }
+  }
+
+  /* TABS RÁPIDAS */
+  .tabs-row { display: flex; gap: 0.5rem; padding: 1.25rem 0; max-width: 1280px; margin: 0 auto; padding-left: 2rem; padding-right: 2rem; flex-wrap: wrap; }
+  .tab-btn {
+    background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-muted);
+    padding: 0.55rem 1.1rem; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .tab-btn:hover { border-color: var(--blue-bright); color: var(--ink); }
+  .tab-btn.active { background: var(--blue-main); border-color: var(--blue-main); color: #fff; }
+
+  /* LAYOUT PRINCIPAL */
+  .search-layout {
+    max-width: 1280px; margin: 0 auto; padding: 0 2rem 5rem;
+    display: grid; grid-template-columns: 260px 1fr; gap: 2.5rem; align-items: start;
+  }
+  @media (max-width: 900px) { .search-layout { grid-template-columns: 1fr; } }
+
+  /* SIDEBAR DE FILTROS */
+  .filters-sidebar {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.5rem; position: sticky; top: 90px;
+  }
+  .filter-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .filter-header h3 { font-size: 1.2rem; }
+  .filter-reset {
+    background: none; border: none; color: var(--blue-main); font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; text-decoration: underline; padding: 0;
+  }
+  .filter-reset:hover { color: var(--blue-bright); }
+  .filter-group { border-top: 1px solid var(--border); padding: 1.1rem 0; }
+  .filter-group:first-of-type { border-top: none; padding-top: 0; }
+  .filter-group-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 0.75rem; }
+  .filter-option {
+    display: flex; align-items: center; gap: 10px; padding: 0.4rem 0; cursor: pointer; font-size: 0.85rem;
+  }
+  .filter-checkbox {
+    width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--border-strong);
+    background: var(--surface); display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.15s, border-color 0.15s;
+  }
+  .filter-checkbox.checked { background: var(--blue-main); border-color: var(--blue-main); }
+  .filter-label { flex: 1; color: var(--ink); }
+  .filter-count { color: var(--ink-dim); font-size: 0.75rem; }
+  .rating-row { display: flex; align-items: center; gap: 8px; margin-top: 0.5rem; }
+  .rating-stars { color: var(--amber); font-size: 0.9rem; }
+  .rating-val { font-size: 0.75rem; color: var(--ink-muted); }
+  input[type="range"] { width: 100%; accent-color: var(--blue-main); }
+
+  /* RESULTADOS */
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+  .results-count { color: var(--ink-muted); font-size: 0.9rem; }
+  .results-count strong { color: var(--ink); }
+  .sort-select {
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface);
+    color: var(--ink); padding: 0.55rem 0.9rem; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .active-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--blue-pale); color: var(--blue-main);
+    border-radius: 99px; padding: 0.3rem 0.7rem 0.3rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  }
+  .chip:hover { background: #D3E0FF; }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
+  /* clicável (abre modal de contato) — hover intencional */
+  .p-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 1.25rem; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+  }
+  .p-card:hover { border-color: var(--blue-bright); transform: translateY(-2px); }
+  .p-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 0.9rem; }
+  .p-avatar {
+    width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0;
+  }
+  .p-name { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+  .p-loc { font-size: 0.78rem; color: var(--ink-muted); }
+  .p-desc { font-size: 0.82rem; color: var(--ink-muted); margin-bottom: 0.9rem; line-height: 1.5; }
+  .p-meta { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .tag {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.7rem; font-weight: 600;
+    background: var(--blue-pale); color: var(--blue-main); border: 1px solid rgba(26,78,216,0.15);
+  }
+  .stars { font-size: 0.75rem; color: var(--amber); }
+  .avail { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 4px; color: var(--green); }
+  .avail-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .avail.busy { color: var(--red); }
+  .avail.busy .avail-dot { background: var(--red); }
+  .p-actions { display: flex; gap: 0.6rem; }
+  .p-actions .btn-sm {
+    flex: 1; text-align: center; padding: 0.55rem; border-radius: var(--radius-sm); font-size: 0.8rem;
+    font-weight: 600; text-decoration: none; cursor: pointer; border: none; transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-sm.primary { background: var(--blue-main); color: #fff; }
+  .btn-sm.primary:hover { background: var(--blue-bright); }
+  .btn-sm.ghost { background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-muted); }
+  .btn-sm.ghost:hover { border-color: var(--blue-bright); color: var(--ink); }
+
+  .empty-state { text-align: center; padding: 4rem 1rem; color: var(--ink-muted); }
+  .empty-state h3 { color: var(--ink); margin-bottom: 0.5rem; font-size: 1.3rem; }
+
+  .pagination { display: flex; justify-content: center; gap: 0.4rem; margin-top: 2.5rem; }
+  .page-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--ink-muted); font-size: 0.85rem; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  .page-btn:hover { border-color: var(--blue-bright); color: var(--ink); }
+  .page-btn.active { background: var(--blue-main); border-color: var(--blue-main); color: #fff; }
+
+  /* FOOTER — bloco reutilizado do index.html */
+  footer { background: var(--surface); border-top: 1px solid var(--border); padding: 2.5rem 0; }
+  footer .nav-inner { flex-wrap: wrap; gap: 1.5rem; }
+  .footer-copy { font-size: 0.8rem; color: var(--ink-dim); }
+  .footer-copy a { color: var(--ink-muted); text-decoration: none; }
+  .footer-copy a:hover { color: var(--ink); }
+  .footer-tagline {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim);
+  }
+
+  /* MODAL — bloco reutilizado do index.html */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(14,27,46,0.45);
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+    padding: 2rem; max-width: 440px; width: 100%; position: relative;
+    box-shadow: 0 20px 60px rgba(14,27,46,0.25); animation: modalIn 0.18s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform: translateY(12px) scale(0.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 1.3rem; line-height: 1; }
+  .modal-close:hover { color: var(--ink); }
+  .modal h3 { font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--ink); }
+  .modal-sub { color: var(--ink-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+  .modal-provider-head { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .modal-avatar { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.1rem; color: #fff; flex-shrink: 0; }
+  .modal-details .name { font-weight: 600; font-size: 1rem; color: var(--ink); }
+  .modal-details .meta { font-size: 0.8rem; color: var(--ink-muted); }
+  .modal-field { margin-bottom: 0.875rem; }
+  .modal-field label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 0.4rem; }
+  .modal-field input, .modal-field textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    color: var(--ink); padding: 0.7rem 0.9rem; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem;
+    outline: none; transition: border-color 0.15s;
+  }
+  .modal-field input:focus, .modal-field textarea:focus { border-color: var(--blue-bright); }
+  .modal-field textarea { resize: vertical; min-height: 80px; }
+  .success-msg { display: none; text-align: center; padding: 1rem; }
+  .success-msg svg { margin: 0 auto 1rem; display: block; }
+  .success-msg h4 { font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--ink); }
+  .success-msg p { color: var(--ink-muted); font-size: 0.875rem; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--blue-main); color: #fff; padding: 0.875rem 2rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.95rem; text-decoration: none; border: none; cursor: pointer; transition: background 0.15s; }
+  .btn-primary:hover { background: var(--blue-bright); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV — mesmo bloco do index.html; âncoras de seção apontam para index.html#... -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <svg class="logo-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text">easy peasy <span>diesel</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#como-funciona">Como funciona</a></li>
+      <li><a href="busca.html" class="active">Prestadores</a></li>
+      <li><a href="index.html#solicitar">Solicitar serviço</a></li>
+      <li><a href="busca.html" class="nav-cta">Encontrar máquina</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- CABEÇALHO DE BUSCA -->
+<div class="search-header">
+  <div class="container">
+    <div class="search-eyebrow">Grande Florianópolis</div>
+    <h1>Encontre a máquina certa para o seu serviço</h1>
+    <div class="search-bar">
+      <input type="text" id="searchText" placeholder="Buscar por nome ou tipo de máquina..." maxlength="80" oninput="applyFilters()">
+      <select id="searchCity" onchange="applyFilters()">
+        <option value="">Todas as cidades</option>
+        <option>Florianópolis</option>
+        <option>Palhoça</option>
+        <option>São José</option>
+      </select>
+      <select id="searchMachine" onchange="applyFilters()">
+        <option value="">Todas as máquinas</option>
+      </select>
+      <button onclick="applyFilters()">Buscar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABS RÁPIDAS -->
+<div class="tabs-row">
+  <button class="tab-btn active" id="tab-todos" onclick="setTab('todos')">Todos os prestadores</button>
+  <button class="tab-btn" id="tab-disponiveis" onclick="setTab('disponiveis')">Disponíveis agora</button>
+  <button class="tab-btn" id="tab-topavaliados" onclick="setTab('topavaliados')">Mais bem avaliados</button>
+</div>
+
+<!-- LAYOUT: FILTROS + RESULTADOS -->
+<div class="search-layout">
+  <aside class="filters-sidebar">
+    <div class="filter-header">
+      <h3>Filtros</h3>
+      <button class="filter-reset" onclick="resetFilters()">Limpar tudo</button>
+    </div>
+    <div class="filter-group">
+      <div class="filter-group-title">Tipo de máquina</div>
+      <div id="filterMachineList"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-group-title">Cidade</div>
+      <div id="filterCityList"></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-group-title">Disponibilidade</div>
+      <label class="filter-option" onclick="toggleFilter('avail','true')">
+        <div class="filter-checkbox" id="chk-avail-true"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <span class="filter-label" style="color:var(--green)">● Disponíveis agora</span>
+      </label>
+      <label class="filter-option" onclick="toggleFilter('avail','false')">
+        <div class="filter-checkbox" id="chk-avail-false"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+        <span class="filter-label" style="color:var(--red)">● Ocupados</span>
+      </label>
+    </div>
+    <div class="filter-group">
+      <div class="filter-group-title">Avaliação mínima</div>
+      <input type="range" id="ratingSlider" min="1" max="5" step="0.5" value="1" oninput="updateRating(this.value)">
+      <div class="rating-row">
+        <span class="rating-stars" id="ratingStars">☆☆☆☆☆</span>
+        <span class="rating-val" id="ratingVal">Qualquer avaliação</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="results-header">
+      <p class="results-count">Exibindo <strong id="countDisplay">0</strong> prestadores</p>
+      <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+        <option value="rating">Melhor avaliação</option>
+        <option value="reviews">Mais avaliações</option>
+        <option value="name">Nome (A-Z)</option>
+      </select>
+    </div>
+    <div class="active-chips" id="activeChips"></div>
+    <div class="cards-grid" id="cardsGrid"></div>
+    <div class="pagination" id="pagination"></div>
+  </main>
+</div>
+
+<!-- FOOTER — bloco reutilizado do index.html -->
+<footer>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">
+      <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text" style="font-size:1rem;">easy peasy <span>diesel</span></span>
+    </a>
+    <span class="footer-copy">© 2026 Easy Peasy Diesel · Projeto demonstrativo · <a href="index.html">Grande Florianópolis, SC</a></span>
+    <span class="footer-tagline">A força que sua obra precisa, na hora que você precisa</span>
+  </div>
+</footer>
+
+<!-- MODAL CONTATO — bloco reutilizado do index.html -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕</button>
+    <div id="modalContent"></div>
+    <div class="success-msg" id="successMsg">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="#E3ECFF"/><path d="M18 28l7 7 13-14" stroke="#0E7C4A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h4>Solicitação enviada!</h4>
+      <p>Em breve o prestador entrará em contato.<br>Este é um site demonstrativo.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   SEGURANÇA — mesmas proteções client-side do index.html
+   ═══════════════════════════════════════════════ */
+function sanitize(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+if (window.top !== window.self) {
+  document.body.innerHTML = '';
+  window.top.location = window.self.location;
+}
+
+/* Mesma base de prestadores do index.html — mantida idêntica entre as páginas */
+const PROVIDERS = [
+  {
+    id: 1, name: "Marcelo Escavações", initials: "ME", color: "#1A4ED8",
+    city: "Florianópolis", neighborhood: "Itacorubi",
+    machine: "Escavadeira", rating: 4.9, reviews: 51,
+    available: true,
+    lat: -27.5810, lng: -48.5040,
+    desc: "Especialista em fundações e terraplanagem. 14 anos de experiência na Ilha."
+  },
+  {
+    id: 2, name: "Cristina Guindastes", initials: "CG", color: "#7C3AED",
+    city: "São José", neighborhood: "Kobrasol",
+    machine: "Guindaste", rating: 4.7, reviews: 33,
+    available: true,
+    lat: -27.6136, lng: -48.6364,
+    desc: "Guindastes para obras industriais e residenciais de grande porte."
+  },
+  {
+    id: 5, name: "Simone Transportes", initials: "ST", color: "#9D174D",
+    city: "São José", neighborhood: "Campinas",
+    machine: "Cam. Basculante", rating: 4.9, reviews: 76,
+    available: true,
+    lat: -27.5980, lng: -48.6180,
+    desc: "Caminhão basculante para entulho, terra, brita e materiais de construção."
+  },
+  {
+    id: 6, name: "Roberto Pesados", initials: "RP", color: "#065F46",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.5, reviews: 14,
+    available: true,
+    lat: -27.6400, lng: -48.6680,
+    desc: "Escavadeira hidráulica, cortes de talude e limpeza de terreno."
+  },
+  {
+    id: 7, name: "Vanderlei Compactação", initials: "VC", color: "#1D4ED8",
+    city: "Florianópolis", neighborhood: "Rio Tavares",
+    machine: "Rolo Compactador", rating: 4.7, reviews: 19,
+    available: true,
+    lat: -27.6150, lng: -48.4850,
+    desc: "Compactação de solos para pavimentação e aterros. Atende obras públicas e privadas."
+  },
+  {
+    id: 8, name: "Juliana Fretes", initials: "JF", color: "#92400E",
+    city: "São José", neighborhood: "Barreiros",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 40,
+    available: false,
+    lat: -27.5850, lng: -48.6050,
+    desc: "Transporte de areia, pedra e terra para construção civil. Frota própria."
+  },
+  {
+    id: 9, name: "Ednaldo Guindastes", initials: "EG", color: "#1E3A5F",
+    city: "Florianópolis", neighborhood: "Estreito",
+    machine: "Guindaste", rating: 5.0, reviews: 17,
+    available: true,
+    lat: -27.5910, lng: -48.5600,
+    desc: "Guindaste telescópico para montagem de estruturas metálicas e içamento de cargas pesadas."
+  },
+  {
+    id: 10, name: "Patrícia Escavações", initials: "PE", color: "#166534",
+    city: "Palhoça", neighborhood: "Ponte do Imaruim",
+    machine: "Retroescavadeira", rating: 4.4, reviews: 11,
+    available: true,
+    lat: -27.6420, lng: -48.6600,
+    desc: "Retroescavadeira para obras residenciais, valas de saneamento e fundações."
+  },
+  {
+    id: 11, name: "Marcão Terraplanagem", initials: "MT", color: "#7E1D1D",
+    city: "São José", neighborhood: "Forquilhinhas",
+    machine: "Motoniveladora", rating: 4.8, reviews: 47,
+    available: true,
+    lat: -27.5700, lng: -48.6250,
+    desc: "Motoniveladora para nivelar e conformar superfícies em loteamentos e vias vicinais."
+  },
+  {
+    id: 12, name: "Renata Fundações", initials: "RF", color: "#5B21B6",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.8, reviews: 29,
+    available: true,
+    lat: -27.5975, lng: -48.5475,
+    desc: "Escavação para fundações residenciais e comerciais no centro da capital."
+  },
+  {
+    id: 13, name: "Osmar Guindastes", initials: "OG", color: "#0369A1",
+    city: "Florianópolis", neighborhood: "Trindade",
+    machine: "Guindaste", rating: 4.6, reviews: 22,
+    available: true,
+    lat: -27.5865, lng: -48.5230,
+    desc: "Guindaste para obras próximas à UFSC e região da Trindade."
+  },
+  {
+    id: 14, name: "Beatriz Terraplanagem", initials: "BT", color: "#A16207",
+    city: "Florianópolis", neighborhood: "Agronômica",
+    machine: "Retroescavadeira", rating: 4.9, reviews: 63,
+    available: false,
+    lat: -27.5820, lng: -48.5330,
+    desc: "Retroescavadeira para valas, fundações e limpeza de terreno."
+  },
+  {
+    id: 15, name: "Wagner Máquinas", initials: "WM", color: "#4C1D95",
+    city: "Florianópolis", neighborhood: "Córrego Grande",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 18,
+    available: true,
+    lat: -27.5930, lng: -48.5100,
+    desc: "Trator para roçagem e preparo de terreno em áreas residenciais."
+  },
+  {
+    id: 16, name: "Douglas Basculantes", initials: "DB", color: "#B91C1C",
+    city: "Florianópolis", neighborhood: "Capoeiras",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 55,
+    available: true,
+    lat: -27.5940, lng: -48.5580,
+    desc: "Transporte de entulho e material de construção no Continente."
+  },
+  {
+    id: 17, name: "Rosana Escavações", initials: "RE", color: "#0891B2",
+    city: "Florianópolis", neighborhood: "Ingleses",
+    machine: "Escavadeira", rating: 5.0, reviews: 12,
+    available: true,
+    lat: -27.4300, lng: -48.3940,
+    desc: "Atendimento ao norte da ilha — Ingleses, Rio Vermelho e Santo Antônio."
+  },
+  {
+    id: 18, name: "Elton Pesados", initials: "EP", color: "#78350F",
+    city: "Florianópolis", neighborhood: "Canasvieiras",
+    machine: "Rolo Compactador", rating: 4.4, reviews: 27,
+    available: false,
+    lat: -27.4270, lng: -48.4480,
+    desc: "Compactação de solo para pavimentação de acessos e estacionamentos."
+  },
+  {
+    id: 19, name: "Priscila Guindastes", initials: "PG", color: "#6D28D9",
+    city: "Florianópolis", neighborhood: "Campeche",
+    machine: "Guindaste", rating: 4.8, reviews: 34,
+    available: true,
+    lat: -27.6750, lng: -48.4790,
+    desc: "Guindaste para montagem de estruturas na região sul da ilha."
+  },
+  {
+    id: 20, name: "Anderson Terraplanagem", initials: "AT", color: "#155E75",
+    city: "Palhoça", neighborhood: "Passa Vinte",
+    machine: "Retroescavadeira", rating: 4.6, reviews: 41,
+    available: true,
+    lat: -27.6180, lng: -48.6280,
+    desc: "Terraplanagem para loteamentos e obras residenciais em Palhoça."
+  },
+  {
+    id: 21, name: "Kelly Máquinas", initials: "KM", color: "#9333EA",
+    city: "Palhoça", neighborhood: "Bela Vista",
+    machine: "Motoniveladora", rating: 4.9, reviews: 20,
+    available: true,
+    lat: -27.6320, lng: -48.6550,
+    desc: "Nivelamento de terrenos e vias em condomínios e loteamentos."
+  },
+  {
+    id: 23, name: "Camila Basculantes", initials: "CB", color: "#3F6212",
+    city: "São José", neighborhood: "Ipiranga",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 48,
+    available: true,
+    lat: -27.6050, lng: -48.6280,
+    desc: "Frota própria para transporte de areia, brita e terra."
+  },
+  {
+    id: 24, name: "Nilton Guindastes", initials: "NG", color: "#831843",
+    city: "São José", neighborhood: "Praia Comprida",
+    machine: "Guindaste", rating: 4.3, reviews: 25,
+    available: false,
+    lat: -27.5890, lng: -48.6230,
+    desc: "Guindaste para montagem industrial e residencial."
+  },
+  {
+    id: 25, name: "Leandro Escavações", initials: "LE", color: "#C2410C",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.7, reviews: 24,
+    available: true,
+    lat: -27.6380, lng: -48.6660,
+    desc: "Escavadeira para obras residenciais e comerciais no centro de Palhoça."
+  },
+  {
+    id: 26, name: "Fernanda Terraplanagem", initials: "FT", color: "#0F766E",
+    city: "Palhoça", neighborhood: "Frei Damião",
+    machine: "Retroescavadeira", rating: 4.8, reviews: 37,
+    available: true,
+    lat: -27.6230, lng: -48.6450,
+    desc: "Retroescavadeira para fundações, valas e limpeza de terreno."
+  },
+  {
+    id: 27, name: "Gustavo Máquinas", initials: "GM", color: "#B45309",
+    city: "Palhoça", neighborhood: "Ambrósio",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 15,
+    available: true,
+    lat: -27.6350, lng: -48.6350,
+    desc: "Trator agrícola para roçagem, preparo de terreno e pequenos aterros."
+  },
+  {
+    id: 28, name: "Tatiane Guindastes", initials: "TG", color: "#DB2777",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Guindaste", rating: 4.9, reviews: 28,
+    available: true,
+    lat: -27.5960, lng: -48.5460,
+    desc: "Guindaste para içamento de estruturas e montagens no centro da capital."
+  },
+  {
+    id: 29, name: "Bruno Basculantes", initials: "BB", color: "#EA580C",
+    city: "São José", neighborhood: "Serraria",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 44,
+    available: true,
+    lat: -27.5750, lng: -48.6420,
+    desc: "Caminhão basculante para transporte de terra, areia e entulho."
+  }
+];
+
+/* ═══════════════════════════════════════════════
+   ESTADO DOS FILTROS
+   ═══════════════════════════════════════════════ */
+const state = {
+  search: '', city: '', machine: '',
+  machines: new Set(), cities: new Set(), avail: new Set(),
+  minRating: 1, tab: 'todos', sort: 'rating', page: 1
+};
+const PER_PAGE = 9;
+
+function uniqueSorted(arr) { return [...new Set(arr)].sort((a,b)=>a.localeCompare(b,'pt-BR')); }
+
+function renderFilterLists() {
+  const machines = uniqueSorted(PROVIDERS.map(p=>p.machine));
+  const cities = uniqueSorted(PROVIDERS.map(p=>p.city));
+
+  document.getElementById('filterMachineList').innerHTML = machines.map(m => {
+    const count = PROVIDERS.filter(p=>p.machine===m).length;
+    return `<label class="filter-option" onclick="toggleFilter('machine','${sanitize(m)}')">
+      <div class="filter-checkbox" id="chk-machine-${sanitize(m).replace(/\s/g,'')}"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <span class="filter-label">${sanitize(m)}</span><span class="filter-count">${count}</span>
+    </label>`;
+  }).join('');
+
+  document.getElementById('filterCityList').innerHTML = cities.map(c => {
+    const count = PROVIDERS.filter(p=>p.city===c).length;
+    return `<label class="filter-option" onclick="toggleFilter('city','${sanitize(c)}')">
+      <div class="filter-checkbox" id="chk-city-${sanitize(c).replace(/\s/g,'')}"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <span class="filter-label">${sanitize(c)}</span><span class="filter-count">${count}</span>
+    </label>`;
+  }).join('');
+
+  const machineSelect = document.getElementById('searchMachine');
+  machines.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    machineSelect.appendChild(opt);
+  });
+}
+
+function toggleFilter(type, value) {
+  const set = type === 'machine' ? state.machines : type === 'city' ? state.cities : state.avail;
+  if (set.has(value)) set.delete(value); else set.add(value);
+  const idKey = type + '-' + value.replace(/\s/g,'');
+  document.getElementById('chk-' + idKey)?.classList.toggle('checked');
+  state.page = 1;
+  applyFilters();
+}
+
+function resetFilters() {
+  state.search=''; state.city=''; state.machine='';
+  state.machines.clear(); state.cities.clear(); state.avail.clear();
+  state.minRating = 1; state.page = 1;
+  document.getElementById('searchText').value = '';
+  document.getElementById('searchCity').value = '';
+  document.getElementById('searchMachine').value = '';
+  document.getElementById('ratingSlider').value = 1;
+  updateRating(1);
+  document.querySelectorAll('.filter-checkbox.checked').forEach(el => el.classList.remove('checked'));
+  setTab('todos');
+}
+
+function updateRating(val) {
+  val = parseFloat(val);
+  state.minRating = val;
+  const full = Math.floor(val), half = val % 1 >= 0.5;
+  document.getElementById('ratingStars').textContent = '★'.repeat(full) + (half?'½':'') + '☆'.repeat(5-full-(half?1:0));
+  document.getElementById('ratingVal').textContent = val <= 1 ? 'Qualquer avaliação' : val.toFixed(1) + '+ estrelas';
+  state.page = 1;
+  applyFilters();
+}
+
+function setTab(tab) {
+  state.tab = tab; state.page = 1;
+  ['todos','disponiveis','topavaliados'].forEach(t => document.getElementById('tab-'+t).classList.toggle('active', t===tab));
+  applyFilters();
+}
+
+function getFiltered() {
+  let list = PROVIDERS.filter(p => {
+    if (state.search) {
+      const q = state.search.toLowerCase();
+      if (!p.name.toLowerCase().includes(q) && !p.machine.toLowerCase().includes(q) && !p.neighborhood.toLowerCase().includes(q)) return false;
+    }
+    if (state.city && p.city !== state.city) return false;
+    if (state.machine && p.machine !== state.machine) return false;
+    if (state.machines.size && !state.machines.has(p.machine)) return false;
+    if (state.cities.size && !state.cities.has(p.city)) return false;
+    if (state.avail.size && !state.avail.has(String(p.available))) return false;
+    if (p.rating < state.minRating) return false;
+    if (state.tab === 'disponiveis' && !p.available) return false;
+    if (state.tab === 'topavaliados' && p.rating < 4.8) return false;
+    return true;
+  });
+  const sort = document.getElementById('sortSelect').value;
+  if (sort === 'rating') list.sort((a,b)=>b.rating-a.rating);
+  else if (sort === 'reviews') list.sort((a,b)=>b.reviews-a.reviews);
+  else if (sort === 'name') list.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  return list;
+}
+
+function renderChips() {
+  const chips = [];
+  state.machines.forEach(m => chips.push({label:m, fn:()=>toggleFilter('machine',m)}));
+  state.cities.forEach(c => chips.push({label:c, fn:()=>toggleFilter('city',c)}));
+  state.avail.forEach(a => chips.push({label:a==='true'?'Disponíveis':'Ocupados', fn:()=>toggleFilter('avail',a)}));
+  if (state.minRating > 1) chips.push({label:state.minRating.toFixed(1)+'+ estrelas', fn:()=>updateRating(1)});
+  const el = document.getElementById('activeChips');
+  el.innerHTML = '';
+  chips.forEach(c => {
+    const span = document.createElement('span');
+    span.className = 'chip';
+    span.innerHTML = sanitize(c.label) + ' ✕';
+    span.onclick = c.fn;
+    el.appendChild(span);
+  });
+}
+
+function renderCards(list) {
+  const grid = document.getElementById('cardsGrid');
+  const start = (state.page-1)*PER_PAGE;
+  const pageItems = list.slice(start, start+PER_PAGE);
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <h3>Nenhum prestador encontrado</h3>
+      <p>Tente ajustar os filtros ou limpar a busca.</p>
+    </div>`;
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+
+  grid.innerHTML = pageItems.map(p => {
+    const stars = '★'.repeat(Math.floor(p.rating)) + (p.rating % 1 >= 0.5 ? '½' : '');
+    return `
+    <div class="p-card" onclick="openModal(${p.id})">
+      <div class="p-card-head">
+        <div class="p-avatar" style="background:${sanitize(p.color)}">${sanitize(p.initials)}</div>
+        <div>
+          <div class="p-name">${sanitize(p.name)}</div>
+          <div class="p-loc">📍 ${sanitize(p.neighborhood)}, ${sanitize(p.city)}</div>
+        </div>
+      </div>
+      <p class="p-desc">${sanitize(p.desc)}</p>
+      <div class="p-meta">
+        <span class="tag">${sanitize(p.machine)}</span>
+        <span class="stars">${stars} <span style="color:var(--ink-muted);font-size:0.72rem">${p.rating} (${p.reviews})</span></span>
+        <span class="avail ${p.available?'':'busy'}"><span class="avail-dot"></span>${p.available?'Disponível':'Ocupado'}</span>
+      </div>
+      <div class="p-actions">
+        <button class="btn-sm primary" onclick="event.stopPropagation(); openModal(${p.id})">Contatar</button>
+        <a href="prestador.html?id=${p.id}" class="btn-sm ghost" onclick="event.stopPropagation()">Ver perfil</a>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalPages = Math.ceil(list.length / PER_PAGE);
+  const pag = document.getElementById('pagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+  let html = '';
+  for (let i=1; i<=totalPages; i++) {
+    html += `<button class="page-btn ${i===state.page?'active':''}" onclick="goToPage(${i})">${i}</button>`;
+  }
+  pag.innerHTML = html;
+}
+
+function goToPage(n) { state.page = n; applyFilters(); window.scrollTo({top: document.querySelector('.search-layout').offsetTop - 90, behavior:'smooth'}); }
+
+function applyFilters() {
+  state.search = document.getElementById('searchText').value;
+  state.city = document.getElementById('searchCity').value;
+  state.machine = document.getElementById('searchMachine').value;
+  const list = getFiltered();
+  document.getElementById('countDisplay').textContent = list.length;
+  renderChips();
+  renderCards(list);
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL DE CONTATO — mesma lógica do index.html
+   ═══════════════════════════════════════════════ */
+function openModal(id) {
+  const p = PROVIDERS.find(x => x.id === id);
+  if (!p) return;
+  const stars = '★'.repeat(Math.floor(p.rating));
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('modalContent').style.display = '';
+  document.getElementById('modalContent').innerHTML = `
+    <h3>Contatar prestador</h3>
+    <p class="modal-sub">Envie uma mensagem diretamente para ${sanitize(p.name)}</p>
+    <div class="modal-provider-head">
+      <div class="modal-avatar" style="background:${sanitize(p.color)}">${sanitize(p.initials)}</div>
+      <div class="modal-details">
+        <div class="name">${sanitize(p.name)}</div>
+        <div class="meta">${sanitize(p.machine)} · <span style="color:#B7791F">${stars}</span> ${sanitize(String(p.rating))} (${sanitize(String(p.reviews))} avaliações)</div>
+        <div class="meta" style="margin-top:2px">${sanitize(p.desc)}</div>
+      </div>
+    </div>
+    <div class="modal-field"><label>Seu nome</label><input type="text" placeholder="Como devemos te chamar?" maxlength="80" autocomplete="off"></div>
+    <div class="modal-field"><label>Telefone ou WhatsApp</label><input type="text" placeholder="(48) 99999-9999" maxlength="20" autocomplete="off"></div>
+    <div class="modal-field"><label>Descreva o serviço</label><textarea placeholder="Descreva brevemente o que você precisa..." maxlength="500"></textarea></div>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem" onclick="submitContact()">Enviar mensagem</button>
+    <a href="prestador.html?id=${p.id}" style="display:block; text-align:center; margin-top:0.75rem; font-size:0.8rem; color:var(--blue-main); text-decoration:none;">Ver perfil completo →</a>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function submitContact() {
+  document.getElementById('modalContent').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+  setTimeout(() => document.getElementById('modalOverlay').classList.remove('open'), 2800);
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('open');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderFilterLists();
+  applyFilters();
+});
+</script>
+</body>
+</html>
