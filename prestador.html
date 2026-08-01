@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfil do Prestador — Easy Peasy Diesel</title>
+
+<!-- ═══════════════════════════════════════════════
+     SEGURANÇA — bloco idêntico ao das demais páginas
+     ═══════════════════════════════════════════════ -->
+<meta http-equiv="X-Frame-Options" content="DENY">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net;
+  img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.tile.openstreetmap.org;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()">
+<meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+
+<!-- ═══════════════════════════════════════════════
+     NAVEGAÇÃO — mesma pasta que index.html/busca.html.
+     Âncoras de seção apontam para index.html#...
+     ═══════════════════════════════════════════════ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<style>
+  :root {
+    --paper:        #F4F6FA;
+    --surface:      #FFFFFF;
+    --surface-2:    #EAEFF6;
+    --ink:          #0E1B2E;
+    --ink-muted:    #55647A;
+    --ink-dim:      #93A1B8;
+    --blue-main:    #1A4ED8;
+    --blue-bright:  #3B82F6;
+    --blue-pale:    #E3ECFF;
+    --border:       #DCE3EC;
+    --border-strong:#C2CEE0;
+    --green:        #0E7C4A;
+    --red:          #C4381F;
+    --amber:        #B7791F;
+    --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--paper); color: var(--ink); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; line-height: 1.65; }
+  h1, h2, h3, h4 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.02em; line-height: 1.1; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--blue-bright); outline-offset: 2px; }
+  .container { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 2rem; }
+
+  /* NAV — bloco reutilizado */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: 68px; background: rgba(244,246,250,0.92); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); }
+  .nav-inner { max-width: 1280px; margin: 0 auto; padding: 0 2rem; height: 100%; display: flex; align-items: center; justify-content: space-between; }
+  .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+  .logo-icon { width: 38px; height: 38px; }
+  .logo-text { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.3rem; color: var(--ink); letter-spacing: 0.04em; text-transform: uppercase; }
+  .logo-text span { color: var(--blue-main); }
+  .nav-links { display: flex; align-items: center; gap: 2rem; list-style: none; }
+  .nav-links a { text-decoration: none; color: var(--ink-muted); font-size: 0.875rem; font-weight: 500; transition: color 0.15s; letter-spacing: 0.03em; }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a.active { color: var(--blue-main); font-weight: 600; }
+  .nav-cta { background: var(--blue-main); color: #fff !important; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); transition: background 0.15s !important; }
+  .nav-cta:hover { background: var(--blue-bright) !important; color: #fff !important; }
+
+  /* VOLTAR */
+  .back-row { padding: 100px 0 0; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: color 0.15s; }
+  .back-link:hover { color: var(--blue-main); }
+
+  /* ESTADO: PRESTADOR NÃO ENCONTRADO */
+  .not-found { display: none; text-align: center; padding: 6rem 1rem 8rem; }
+  .not-found h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+  .not-found p { color: var(--ink-muted); margin-bottom: 1.5rem; }
+
+  /* PERFIL */
+  #profileContent { display: none; }
+  .profile-head {
+    display: flex; align-items: center; gap: 1.5rem; padding: 1.75rem 0 2rem; flex-wrap: wrap;
+  }
+  .p-avatar-lg {
+    width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 2rem; color: #fff; flex-shrink: 0;
+    box-shadow: 0 8px 20px rgba(14,27,46,0.15);
+  }
+  .profile-head h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin-bottom: 0.35rem; }
+  .profile-loc { color: var(--ink-muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .profile-meta-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .tag { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 99px; font-size: 0.72rem; font-weight: 600; background: var(--blue-pale); color: var(--blue-main); border: 1px solid rgba(26,78,216,0.15); }
+  .stars { font-size: 0.8rem; color: var(--amber); }
+  .avail { font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 4px; color: var(--green); }
+  .avail-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .avail.busy { color: var(--red); }
+  .avail.busy .avail-dot { background: var(--red); }
+
+  /* LAYOUT PRINCIPAL */
+  .profile-layout { display: grid; grid-template-columns: 1fr 320px; gap: 2.5rem; align-items: start; padding-bottom: 5rem; }
+  @media (max-width: 860px) { .profile-layout { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; margin-bottom: 1.5rem; }
+  .panel h2 { font-size: 1.25rem; margin-bottom: 0.9rem; }
+  .panel p { color: var(--ink-muted); font-size: 0.9rem; line-height: 1.7; }
+
+  .stat-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 1.5rem; }
+  .stat-cell { background: var(--surface); padding: 1.1rem; text-align: center; }
+  .stat-cell .num { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--ink); }
+  .stat-cell .lbl { font-size: 0.7rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  #miniMap { height: 260px; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+  .leaflet-tile { filter: grayscale(0.2) contrast(1.02) brightness(1.02); }
+
+  /* SIDEBAR DE CONTATO */
+  .contact-card { position: sticky; top: 90px; }
+  .contact-card .btn-primary { width: 100%; justify-content: center; margin-bottom: 0.75rem; }
+  .contact-fact { display: flex; justify-content: space-between; padding: 0.6rem 0; border-top: 1px solid var(--border); font-size: 0.83rem; }
+  .contact-fact:first-of-type { border-top: none; }
+  .contact-fact span:first-child { color: var(--ink-muted); }
+  .contact-fact span:last-child { font-weight: 600; color: var(--ink); text-align: right; }
+
+  .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--blue-main); color: #fff; padding: 0.875rem 1.5rem; border-radius: var(--radius-sm); font-weight: 600; font-size: 0.95rem; text-decoration: none; border: none; cursor: pointer; transition: background 0.15s; }
+  .btn-primary:hover { background: var(--blue-bright); }
+  .btn-ghost { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--ink-muted); padding: 0.875rem 1.5rem; border-radius: var(--radius-sm); font-weight: 500; font-size: 0.95rem; text-decoration: none; border: 1px solid var(--border-strong); cursor: pointer; transition: border-color 0.15s, color 0.15s; }
+  .btn-ghost:hover { border-color: var(--blue-bright); color: var(--ink); }
+
+  /* OUTROS PRESTADORES — cartões são links de verdade (<a>), então o hover é sempre justificado */
+  .others-section { padding: 1rem 0 5rem; }
+  .others-section h2 { font-size: 1.3rem; margin-bottom: 1.1rem; }
+  .others-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .other-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.1rem; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
+  .other-card:hover { border-color: var(--blue-bright); transform: translateY(-2px); }
+  .other-head { display: flex; align-items: center; gap: 10px; margin-bottom: 0.7rem; }
+  .other-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.85rem; color: #fff; flex-shrink: 0; }
+  .other-name { font-weight: 600; font-size: 0.88rem; color: var(--ink); }
+  .other-loc { font-size: 0.75rem; color: var(--ink-muted); }
+
+  /* FOOTER — bloco reutilizado */
+  footer { background: var(--surface); border-top: 1px solid var(--border); padding: 2.5rem 0; }
+  footer .nav-inner { flex-wrap: wrap; gap: 1.5rem; }
+  .footer-copy { font-size: 0.8rem; color: var(--ink-dim); }
+  .footer-copy a { color: var(--ink-muted); text-decoration: none; }
+  .footer-copy a:hover { color: var(--ink); }
+  .footer-tagline { font-family: 'Barlow Condensed', sans-serif; font-size: 0.85rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim); }
+
+  /* MODAL — bloco reutilizado */
+  .modal-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(14,27,46,0.45); align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 2rem; max-width: 440px; width: 100%; position: relative; box-shadow: 0 20px 60px rgba(14,27,46,0.25); animation: modalIn 0.18s ease; }
+  @keyframes modalIn { from { opacity:0; transform: translateY(12px) scale(0.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 1.3rem; line-height: 1; }
+  .modal-close:hover { color: var(--ink); }
+  .modal h3 { font-size: 1.5rem; margin-bottom: 0.25rem; color: var(--ink); }
+  .modal-sub { color: var(--ink-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+  .modal-provider-head { display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem; padding: 1rem; background: var(--surface-2); border-radius: var(--radius-sm); }
+  .modal-avatar { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.1rem; color: #fff; flex-shrink: 0; }
+  .modal-details .name { font-weight: 600; font-size: 1rem; color: var(--ink); }
+  .modal-details .meta { font-size: 0.8rem; color: var(--ink-muted); }
+  .modal-field { margin-bottom: 0.875rem; }
+  .modal-field label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 0.4rem; }
+  .modal-field input, .modal-field textarea { width: 100%; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--ink); padding: 0.7rem 0.9rem; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.875rem; outline: none; transition: border-color 0.15s; }
+  .modal-field input:focus, .modal-field textarea:focus { border-color: var(--blue-bright); }
+  .modal-field textarea { resize: vertical; min-height: 80px; }
+  .success-msg { display: none; text-align: center; padding: 1rem; }
+  .success-msg svg { margin: 0 auto 1rem; display: block; }
+  .success-msg h4 { font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--ink); }
+  .success-msg p { color: var(--ink-muted); font-size: 0.875rem; }
+
+  @media (max-width: 768px) { .nav-links { display: none; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
+</style>
+</head>
+<body>
+
+<!-- NAV — mesmo bloco do index.html; âncoras apontam para index.html#... -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <svg class="logo-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text">easy peasy <span>diesel</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#como-funciona">Como funciona</a></li>
+      <li><a href="busca.html" class="active">Prestadores</a></li>
+      <li><a href="index.html#solicitar">Solicitar serviço</a></li>
+      <li><a href="busca.html" class="nav-cta">Encontrar máquina</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="back-row">
+    <a href="busca.html" class="back-link">← Voltar para a busca</a>
+  </div>
+
+  <!-- ESTADO: link sem id válido -->
+  <div class="not-found" id="notFound">
+    <h1>Não achamos esse prestador</h1>
+    <p>O link pode estar incompleto ou o prestador não existe mais na base.</p>
+    <a href="busca.html" class="btn-primary">Ver todos os prestadores</a>
+  </div>
+
+  <!-- PERFIL (preenchido via JS a partir do ?id= na URL) -->
+  <div id="profileContent">
+    <div class="profile-head">
+      <div class="p-avatar-lg" id="pAvatar"></div>
+      <div>
+        <h1 id="pName"></h1>
+        <div class="profile-loc" id="pLoc"></div>
+        <div class="profile-meta-row" id="pMetaRow"></div>
+      </div>
+    </div>
+
+    <div class="profile-layout">
+      <div>
+        <div class="stat-strip">
+          <div class="stat-cell"><div class="num" id="statRating"></div><div class="lbl">Avaliação</div></div>
+          <div class="stat-cell"><div class="num" id="statReviews"></div><div class="lbl">Avaliações</div></div>
+          <div class="stat-cell"><div class="num" id="statServicos"></div><div class="lbl">Serviços feitos</div></div>
+        </div>
+
+        <div class="panel">
+          <h2>Sobre</h2>
+          <p id="pDesc"></p>
+        </div>
+
+        <div class="panel">
+          <h2>Região de atendimento</h2>
+          <div id="miniMap"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel contact-card">
+          <button class="btn-primary" id="btnContatar">Contatar prestador</button>
+          <a href="busca.html" class="btn-ghost" style="width:100%; justify-content:center;">Ver outros prestadores</a>
+          <div style="margin-top:1.25rem">
+            <div class="contact-fact"><span>Máquina</span><span id="factMachine"></span></div>
+            <div class="contact-fact"><span>Cidade</span><span id="factCity"></span></div>
+            <div class="contact-fact"><span>Bairro</span><span id="factNeighborhood"></span></div>
+            <div class="contact-fact"><span>Situação</span><span id="factAvail"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="others-section">
+      <h2>Outros prestadores na região</h2>
+      <div class="others-grid" id="othersGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER — bloco reutilizado -->
+<footer>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">
+      <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text" style="font-size:1rem;">easy peasy <span>diesel</span></span>
+    </a>
+    <span class="footer-copy">© 2026 Easy Peasy Diesel · Projeto demonstrativo · <a href="index.html">Grande Florianópolis, SC</a></span>
+    <span class="footer-tagline">A força que sua obra precisa, na hora que você precisa</span>
+  </div>
+</footer>
+
+<!-- MODAL CONTATO — bloco reutilizado -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕</button>
+    <div id="modalContent"></div>
+    <div class="success-msg" id="successMsg">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="#E3ECFF"/><path d="M18 28l7 7 13-14" stroke="#0E7C4A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h4>Solicitação enviada!</h4>
+      <p>Em breve o prestador entrará em contato.<br>Este é um site demonstrativo.</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>
+/* ═══════════════════════════════════════════════
+   SEGURANÇA — mesmas proteções client-side das outras páginas
+   ═══════════════════════════════════════════════ */
+function sanitize(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+if (window.top !== window.self) {
+  document.body.innerHTML = '';
+  window.top.location = window.self.location;
+}
+
+/* Mesma base de prestadores do index.html/busca.html */
+const PROVIDERS = [
+  {
+    id: 1, name: "Marcelo Escavações", initials: "ME", color: "#1A4ED8",
+    city: "Florianópolis", neighborhood: "Itacorubi",
+    machine: "Escavadeira", rating: 4.9, reviews: 51,
+    available: true,
+    lat: -27.5810, lng: -48.5040,
+    desc: "Especialista em fundações e terraplanagem. 14 anos de experiência na Ilha."
+  },
+  {
+    id: 2, name: "Cristina Guindastes", initials: "CG", color: "#7C3AED",
+    city: "São José", neighborhood: "Kobrasol",
+    machine: "Guindaste", rating: 4.7, reviews: 33,
+    available: true,
+    lat: -27.6136, lng: -48.6364,
+    desc: "Guindastes para obras industriais e residenciais de grande porte."
+  },
+  {
+    id: 5, name: "Simone Transportes", initials: "ST", color: "#9D174D",
+    city: "São José", neighborhood: "Campinas",
+    machine: "Cam. Basculante", rating: 4.9, reviews: 76,
+    available: true,
+    lat: -27.5980, lng: -48.6180,
+    desc: "Caminhão basculante para entulho, terra, brita e materiais de construção."
+  },
+  {
+    id: 6, name: "Roberto Pesados", initials: "RP", color: "#065F46",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.5, reviews: 14,
+    available: true,
+    lat: -27.6400, lng: -48.6680,
+    desc: "Escavadeira hidráulica, cortes de talude e limpeza de terreno."
+  },
+  {
+    id: 7, name: "Vanderlei Compactação", initials: "VC", color: "#1D4ED8",
+    city: "Florianópolis", neighborhood: "Rio Tavares",
+    machine: "Rolo Compactador", rating: 4.7, reviews: 19,
+    available: true,
+    lat: -27.6150, lng: -48.4850,
+    desc: "Compactação de solos para pavimentação e aterros. Atende obras públicas e privadas."
+  },
+  {
+    id: 8, name: "Juliana Fretes", initials: "JF", color: "#92400E",
+    city: "São José", neighborhood: "Barreiros",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 40,
+    available: false,
+    lat: -27.5850, lng: -48.6050,
+    desc: "Transporte de areia, pedra e terra para construção civil. Frota própria."
+  },
+  {
+    id: 9, name: "Ednaldo Guindastes", initials: "EG", color: "#1E3A5F",
+    city: "Florianópolis", neighborhood: "Estreito",
+    machine: "Guindaste", rating: 5.0, reviews: 17,
+    available: true,
+    lat: -27.5910, lng: -48.5600,
+    desc: "Guindaste telescópico para montagem de estruturas metálicas e içamento de cargas pesadas."
+  },
+  {
+    id: 10, name: "Patrícia Escavações", initials: "PE", color: "#166534",
+    city: "Palhoça", neighborhood: "Ponte do Imaruim",
+    machine: "Retroescavadeira", rating: 4.4, reviews: 11,
+    available: true,
+    lat: -27.6420, lng: -48.6600,
+    desc: "Retroescavadeira para obras residenciais, valas de saneamento e fundações."
+  },
+  {
+    id: 11, name: "Marcão Terraplanagem", initials: "MT", color: "#7E1D1D",
+    city: "São José", neighborhood: "Forquilhinhas",
+    machine: "Motoniveladora", rating: 4.8, reviews: 47,
+    available: true,
+    lat: -27.5700, lng: -48.6250,
+    desc: "Motoniveladora para nivelar e conformar superfícies em loteamentos e vias vicinais."
+  },
+  {
+    id: 12, name: "Renata Fundações", initials: "RF", color: "#5B21B6",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.8, reviews: 29,
+    available: true,
+    lat: -27.5975, lng: -48.5475,
+    desc: "Escavação para fundações residenciais e comerciais no centro da capital."
+  },
+  {
+    id: 13, name: "Osmar Guindastes", initials: "OG", color: "#0369A1",
+    city: "Florianópolis", neighborhood: "Trindade",
+    machine: "Guindaste", rating: 4.6, reviews: 22,
+    available: true,
+    lat: -27.5865, lng: -48.5230,
+    desc: "Guindaste para obras próximas à UFSC e região da Trindade."
+  },
+  {
+    id: 14, name: "Beatriz Terraplanagem", initials: "BT", color: "#A16207",
+    city: "Florianópolis", neighborhood: "Agronômica",
+    machine: "Retroescavadeira", rating: 4.9, reviews: 63,
+    available: false,
+    lat: -27.5820, lng: -48.5330,
+    desc: "Retroescavadeira para valas, fundações e limpeza de terreno."
+  },
+  {
+    id: 15, name: "Wagner Máquinas", initials: "WM", color: "#4C1D95",
+    city: "Florianópolis", neighborhood: "Córrego Grande",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 18,
+    available: true,
+    lat: -27.5930, lng: -48.5100,
+    desc: "Trator para roçagem e preparo de terreno em áreas residenciais."
+  },
+  {
+    id: 16, name: "Douglas Basculantes", initials: "DB", color: "#B91C1C",
+    city: "Florianópolis", neighborhood: "Capoeiras",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 55,
+    available: true,
+    lat: -27.5940, lng: -48.5580,
+    desc: "Transporte de entulho e material de construção no Continente."
+  },
+  {
+    id: 17, name: "Rosana Escavações", initials: "RE", color: "#0891B2",
+    city: "Florianópolis", neighborhood: "Ingleses",
+    machine: "Escavadeira", rating: 5.0, reviews: 12,
+    available: true,
+    lat: -27.4300, lng: -48.3940,
+    desc: "Atendimento ao norte da ilha — Ingleses, Rio Vermelho e Santo Antônio."
+  },
+  {
+    id: 18, name: "Elton Pesados", initials: "EP", color: "#78350F",
+    city: "Florianópolis", neighborhood: "Canasvieiras",
+    machine: "Rolo Compactador", rating: 4.4, reviews: 27,
+    available: false,
+    lat: -27.4270, lng: -48.4480,
+    desc: "Compactação de solo para pavimentação de acessos e estacionamentos."
+  },
+  {
+    id: 19, name: "Priscila Guindastes", initials: "PG", color: "#6D28D9",
+    city: "Florianópolis", neighborhood: "Campeche",
+    machine: "Guindaste", rating: 4.8, reviews: 34,
+    available: true,
+    lat: -27.6750, lng: -48.4790,
+    desc: "Guindaste para montagem de estruturas na região sul da ilha."
+  },
+  {
+    id: 20, name: "Anderson Terraplanagem", initials: "AT", color: "#155E75",
+    city: "Palhoça", neighborhood: "Passa Vinte",
+    machine: "Retroescavadeira", rating: 4.6, reviews: 41,
+    available: true,
+    lat: -27.6180, lng: -48.6280,
+    desc: "Terraplanagem para loteamentos e obras residenciais em Palhoça."
+  },
+  {
+    id: 21, name: "Kelly Máquinas", initials: "KM", color: "#9333EA",
+    city: "Palhoça", neighborhood: "Bela Vista",
+    machine: "Motoniveladora", rating: 4.9, reviews: 20,
+    available: true,
+    lat: -27.6320, lng: -48.6550,
+    desc: "Nivelamento de terrenos e vias em condomínios e loteamentos."
+  },
+  {
+    id: 23, name: "Camila Basculantes", initials: "CB", color: "#3F6212",
+    city: "São José", neighborhood: "Ipiranga",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 48,
+    available: true,
+    lat: -27.6050, lng: -48.6280,
+    desc: "Frota própria para transporte de areia, brita e terra."
+  },
+  {
+    id: 24, name: "Nilton Guindastes", initials: "NG", color: "#831843",
+    city: "São José", neighborhood: "Praia Comprida",
+    machine: "Guindaste", rating: 4.3, reviews: 25,
+    available: false,
+    lat: -27.5890, lng: -48.6230,
+    desc: "Guindaste para montagem industrial e residencial."
+  },
+  {
+    id: 25, name: "Leandro Escavações", initials: "LE", color: "#C2410C",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.7, reviews: 24,
+    available: true,
+    lat: -27.6380, lng: -48.6660,
+    desc: "Escavadeira para obras residenciais e comerciais no centro de Palhoça."
+  },
+  {
+    id: 26, name: "Fernanda Terraplanagem", initials: "FT", color: "#0F766E",
+    city: "Palhoça", neighborhood: "Frei Damião",
+    machine: "Retroescavadeira", rating: 4.8, reviews: 37,
+    available: true,
+    lat: -27.6230, lng: -48.6450,
+    desc: "Retroescavadeira para fundações, valas e limpeza de terreno."
+  },
+  {
+    id: 27, name: "Gustavo Máquinas", initials: "GM", color: "#B45309",
+    city: "Palhoça", neighborhood: "Ambrósio",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 15,
+    available: true,
+    lat: -27.6350, lng: -48.6350,
+    desc: "Trator agrícola para roçagem, preparo de terreno e pequenos aterros."
+  },
+  {
+    id: 28, name: "Tatiane Guindastes", initials: "TG", color: "#DB2777",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Guindaste", rating: 4.9, reviews: 28,
+    available: true,
+    lat: -27.5960, lng: -48.5460,
+    desc: "Guindaste para içamento de estruturas e montagens no centro da capital."
+  },
+  {
+    id: 29, name: "Bruno Basculantes", initials: "BB", color: "#EA580C",
+    city: "São José", neighborhood: "Serraria",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 44,
+    available: true,
+    lat: -27.5750, lng: -48.6420,
+    desc: "Caminhão basculante para transporte de terra, areia e entulho."
+  }
+];
+
+let currentProvider = null;
+
+function getIdFromUrl() {
+  const raw = new URLSearchParams(window.location.search).get('id');
+  const n = Number(raw);
+  return Number.isInteger(n) ? n : null;
+}
+
+function renderProfile(p) {
+  currentProvider = p;
+  document.getElementById('notFound').style.display = 'none';
+  document.getElementById('profileContent').style.display = 'block';
+  document.title = p.name + ' — Easy Peasy Diesel';
+
+  document.getElementById('pAvatar').style.background = p.color;
+  document.getElementById('pAvatar').textContent = p.initials;
+  document.getElementById('pName').textContent = p.name;
+  document.getElementById('pLoc').textContent = '📍 ' + p.neighborhood + ', ' + p.city;
+
+  const stars = '★'.repeat(Math.floor(p.rating)) + (p.rating % 1 >= 0.5 ? '½' : '');
+  document.getElementById('pMetaRow').innerHTML = `
+    <span class="tag">${sanitize(p.machine)}</span>
+    <span class="stars">${stars} <span style="color:var(--ink-muted);font-size:0.78rem">${p.rating} (${p.reviews} avaliações)</span></span>
+    <span class="avail ${p.available ? '' : 'busy'}"><span class="avail-dot"></span>${p.available ? 'Disponível agora' : 'Ocupado no momento'}</span>
+  `;
+
+  document.getElementById('statRating').textContent = p.rating.toFixed(1);
+  document.getElementById('statReviews').textContent = p.reviews;
+  /* proxy razoável a partir das avaliações, já que cada serviço concluído tende a gerar uma avaliação */
+  document.getElementById('statServicos').textContent = Math.round(p.reviews * 1.4) + '+';
+
+  document.getElementById('pDesc').textContent = p.desc;
+
+  document.getElementById('factMachine').textContent = p.machine;
+  document.getElementById('factCity').textContent = p.city;
+  document.getElementById('factNeighborhood').textContent = p.neighborhood;
+  document.getElementById('factAvail').textContent = p.available ? 'Disponível' : 'Ocupado';
+
+  document.getElementById('btnContatar').addEventListener('click', () => openModal(p));
+
+  renderOthers(p);
+  try { renderMiniMap(p); } catch (e) {
+    document.getElementById('miniMap').innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:0.8rem;text-align:center;padding:1rem">Mapa indisponível no momento</div>';
+  }
+}
+
+function renderOthers(p) {
+  const sameCity = PROVIDERS.filter(x => x.id !== p.id && x.city === p.city);
+  const rest = PROVIDERS.filter(x => x.id !== p.id && x.city !== p.city);
+  const picks = sameCity.concat(rest).slice(0, 3);
+
+  document.getElementById('othersGrid').innerHTML = picks.map(o => `
+    <a class="other-card" href="prestador.html?id=${o.id}">
+      <div class="other-head">
+        <div class="other-avatar" style="background:${sanitize(o.color)}">${sanitize(o.initials)}</div>
+        <div>
+          <div class="other-name">${sanitize(o.name)}</div>
+          <div class="other-loc">${sanitize(o.neighborhood)}, ${sanitize(o.city)}</div>
+        </div>
+      </div>
+      <span class="tag">${sanitize(o.machine)}</span>
+    </a>
+  `).join('');
+}
+
+function renderMiniMap(p) {
+  const map = L.map('miniMap', { zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false }).setView([p.lat, p.lng], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(map);
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:36px;height:36px;border-radius:50%;background:${p.color};border:2px solid ${p.available ? '#0E7C4A' : '#C4381F'};display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.75rem;color:#fff;box-shadow:0 2px 8px rgba(14,27,46,0.35);">${p.initials}</div>`,
+    iconSize: [36, 36], iconAnchor: [18, 18]
+  });
+  L.marker([p.lat, p.lng], { icon }).addTo(map);
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL DE CONTATO — mesma lógica das outras páginas
+   ═══════════════════════════════════════════════ */
+function openModal(p) {
+  const stars = '★'.repeat(Math.floor(p.rating));
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('modalContent').style.display = '';
+  document.getElementById('modalContent').innerHTML = `
+    <h3>Contatar prestador</h3>
+    <p class="modal-sub">Envie uma mensagem diretamente para ${sanitize(p.name)}</p>
+    <div class="modal-provider-head">
+      <div class="modal-avatar" style="background:${sanitize(p.color)}">${sanitize(p.initials)}</div>
+      <div class="modal-details">
+        <div class="name">${sanitize(p.name)}</div>
+        <div class="meta">${sanitize(p.machine)} · <span style="color:#B7791F">${stars}</span> ${sanitize(String(p.rating))} (${sanitize(String(p.reviews))} avaliações)</div>
+        <div class="meta" style="margin-top:2px">${sanitize(p.desc)}</div>
+      </div>
+    </div>
+    <div class="modal-field"><label>Seu nome</label><input type="text" placeholder="Como devemos te chamar?" maxlength="80" autocomplete="off"></div>
+    <div class="modal-field"><label>Telefone ou WhatsApp</label><input type="text" placeholder="(48) 99999-9999" maxlength="20" autocomplete="off"></div>
+    <div class="modal-field"><label>Descreva o serviço</label><textarea placeholder="Descreva brevemente o que você precisa..." maxlength="500"></textarea></div>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem" onclick="submitContact()">Enviar mensagem</button>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function submitContact() {
+  document.getElementById('modalContent').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+  setTimeout(() => document.getElementById('modalOverlay').classList.remove('open'), 2800);
+}
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('open');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const id = getIdFromUrl();
+  const p = id !== null ? PROVIDERS.find(x => x.id === id) : null;
+  if (p) {
+    renderProfile(p);
+  } else {
+    document.getElementById('notFound').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
