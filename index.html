@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Easy Peasy Diesel — Máquinas Pesadas na Grande Florianópolis</title>
+
+<!-- ═══════════════════════════════════════════════
+     SEGURANÇA — Cabeçalhos de Proteção
+     Aplicados via meta tags (compatível com GitHub Pages)
+     Todas as páginas futuras devem copiar este bloco.
+     ═══════════════════════════════════════════════ -->
+
+<!-- Impede que o site seja embutido em iframes (anti-clickjacking) -->
+<meta http-equiv="X-Frame-Options" content="DENY">
+
+<!-- Impede que o browser "adivinhe" o tipo de arquivo (MIME sniffing) -->
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+<!-- Controla quais recursos externos podem ser carregados (CSP) -->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net;
+  img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org;
+  font-src 'self' https://fonts.gstatic.com;
+  connect-src 'self' https://*.tile.openstreetmap.org;
+  frame-ancestors 'none';
+  base-uri 'self';
+  form-action 'self';
+">
+
+<!-- Limita informações enviadas ao clicar em links externos -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
+<!-- Desativa recursos sensíveis do browser que não são necessários -->
+<meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), payment=(), usb=(), bluetooth=()">
+
+<!-- Força HTTPS quando disponível (HSTS via meta — reforçado pelo GitHub Pages) -->
+<meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+
+<!-- ═══════════════════════════════════════════════
+     NAVEGAÇÃO — Leia antes de subir para o GitHub
+     Este arquivo assume que TODAS as páginas do site
+     (index.html, busca.html, prestador.html, etc.)
+     ficam na MESMA pasta (a raiz do repositório).
+     Os links usam nomes simples (ex: href="busca.html"),
+     não caminhos completos. Se um arquivo estiver em
+     subpasta ou tiver nome diferente do link, o link quebra.
+     Teste sempre pela URL do GitHub Pages, nunca abrindo
+     o arquivo direto do computador.
+     ═══════════════════════════════════════════════ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+<style>
+  :root {
+    --paper:        #F4F6FA;
+    --surface:      #FFFFFF;
+    --surface-2:    #EAEFF6;
+    --ink:          #0E1B2E;
+    --ink-muted:    #55647A;
+    --ink-dim:      #93A1B8;
+    --blue-main:    #1A4ED8;
+    --blue-bright:  #3B82F6;
+    --blue-pale:    #E3ECFF;
+    --border:       #DCE3EC;
+    --border-strong:#C2CEE0;
+    --green:        #0E7C4A;
+    --red:          #C4381F;
+    --amber:        #B7791F;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--blue-bright); outline-offset: 2px; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: 68px;
+    background: rgba(244,246,250,0.88);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    height: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none;
+  }
+  .logo-icon { width: 38px; height: 38px; }
+  .logo-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.3rem;
+    color: var(--ink);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .logo-text span { color: var(--blue-main); }
+  .nav-links {
+    display: flex; align-items: center; gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    background: var(--blue-main);
+    color: #fff !important;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s !important;
+  }
+  .nav-cta:hover { background: var(--blue-bright) !important; color: #fff !important; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 100px 0 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-coastline {
+    position: absolute; z-index: 0;
+    right: -5%; bottom: -8%;
+    width: 60%; min-width: 520px;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative; z-index: 1;
+    max-width: 680px;
+  }
+  .hero-badge {
+    display: inline-block;
+    background: var(--blue-pale);
+    border: 1px solid rgba(26,78,216,0.18);
+    border-radius: 99px;
+    padding: 0.4rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--blue-main);
+    margin-bottom: 1.75rem;
+  }
+  .hero h1 {
+    font-size: clamp(3.2rem, 6vw, 5.5rem);
+    font-weight: 800;
+    margin-bottom: 1.25rem;
+    color: var(--ink);
+  }
+  .hero h1 .accent { color: var(--blue-main); }
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--ink-muted);
+    max-width: 540px;
+    margin-bottom: 2.5rem;
+    font-weight: 400;
+    line-height: 1.75;
+  }
+  .hero-actions {
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue-main);
+    color: #fff;
+    padding: 0.875rem 2rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: none; cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { background: var(--blue-bright); transform: translateY(-1px); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent;
+    color: var(--ink-muted);
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid var(--border-strong);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--blue-bright); color: var(--ink); }
+  .hero-stats {
+    display: flex; gap: 2.5rem; margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 2rem; font-weight: 700;
+    color: var(--ink);
+  }
+  .stat-label { font-size: 0.78rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* CONTAINER CENTRALIZADO GLOBAL */
+  .container {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  /* SECTION SHARED */
+  section { padding: 6rem 0; }
+  .section-label {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--blue-main);
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: clamp(2.2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    max-width: 600px;
+    color: var(--ink);
+  }
+  .section-subtitle {
+    color: var(--ink-muted);
+    max-width: 520px;
+    font-weight: 400;
+    line-height: 1.75;
+    margin-bottom: 3.5rem;
+  }
+
+  /* HOW IT WORKS — cartões informativos, sem ação de clique: sem hover */
+  #como-funciona { background: var(--surface-2); }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    max-width: 1100px;
+  }
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+  }
+  .step-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 4.5rem; font-weight: 800;
+    color: var(--border-strong);
+    line-height: 1;
+    margin-bottom: 1.25rem;
+  }
+  .step-icon {
+    width: 48px; height: 48px;
+    background: var(--blue-pale);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+  .step-icon svg { width: 24px; height: 24px; stroke: var(--blue-main); fill: none; stroke-width: 1.5; }
+  .step-card h3 { font-size: 1.4rem; margin-bottom: 0.75rem; color: var(--ink); }
+  .step-card p { font-size: 0.9rem; color: var(--ink-muted); font-weight: 400; }
+
+  /* PHOTO UPLOAD FEATURE */
+  #solicitar { background: var(--surface); }
+  .solicitar-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    max-width: 1100px;
+  }
+  @media (max-width: 768px) {
+    .solicitar-layout { grid-template-columns: 1fr; gap: 2rem; }
+    .nav-inner { padding: 0 1.25rem; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 0 3rem; }
+    section { padding: 4rem 0; }
+    .container { padding-left: 1.25rem; padding-right: 1.25rem; }
+  }
+  .upload-widget {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+  }
+  .upload-area {
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .upload-area:hover { background: var(--blue-pale); border-color: var(--blue-bright); }
+  .upload-area input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon { margin: 0 auto 1rem; width: 48px; height: 48px; opacity: 0.6; }
+  .upload-area p { color: var(--ink-muted); font-size: 0.9rem; }
+  .upload-area strong { display: block; color: var(--ink); margin-bottom: 0.3rem; font-size: 1rem; }
+  .upload-preview {
+    display: none;
+    width: 100%; height: 160px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    margin-top: 1rem;
+  }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+  .form-group select, .form-group input, .form-group textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    padding: 0.75rem 1rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .form-group select:focus,
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--blue-bright); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+
+  /* PROVIDERS MAP */
+  #prestadores { background: var(--surface-2); }
+  .map-section-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2.5rem;
+    align-items: start;
+    max-width: 1200px;
+  }
+  @media (max-width: 900px) {
+    .map-section-layout { grid-template-columns: 1fr; }
+    .solicitar-layout { grid-template-columns: 1fr; }
+  }
+  #map {
+    height: 480px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+  .leaflet-tile { filter: grayscale(0.2) contrast(1.02) brightness(1.02); }
+  .provider-list {
+    display: flex; flex-direction: column; gap: 0.875rem;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .provider-list::-webkit-scrollbar { width: 4px; }
+  .provider-list::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 2px; }
+  .provider-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  /* clicável (abre o modal de contato) — hover é intencional aqui */
+  .provider-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.125rem;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .provider-card.active {
+    border-color: var(--blue-bright);
+    background: var(--blue-pale);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .provider-card:hover { border-color: var(--blue-bright); transform: translateX(-2px); }
+  }
+  .provider-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 0.625rem;
+  }
+  .provider-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 0.9rem;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .provider-info-name { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
+  .provider-info-loc { font-size: 0.75rem; color: var(--ink-muted); }
+  .provider-meta {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.7rem; font-weight: 600;
+    background: var(--blue-pale);
+    color: var(--blue-main);
+    border: 1px solid rgba(26,78,216,0.15);
+  }
+  .stars { font-size: 0.75rem; color: var(--amber); letter-spacing: 0.05em; }
+  .avail { font-size: 0.7rem; font-weight: 600; display: flex; align-items: center; gap: 4px; color: var(--green); }
+  .avail-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .avail.busy { color: var(--red); }
+  .avail.busy .avail-dot { background: var(--red); }
+
+  /* FOOTER */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 0;
+  }
+  footer .nav-inner { flex-wrap: wrap; gap: 1.5rem; }
+  .footer-copy { font-size: 0.8rem; color: var(--ink-dim); }
+  .footer-copy a { color: var(--ink-muted); text-decoration: none; }
+  .footer-copy a:hover { color: var(--ink); }
+  .footer-tagline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem; font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(14,27,46,0.45);
+    align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    max-width: 440px; width: 100%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(14,27,46,0.25);
+    animation: modalIn 0.18s ease;
+  }
+  @keyframes modalIn {
+    from { opacity:0; transform: translateY(12px) scale(0.98); }
+    to { opacity:1; transform: translateY(0) scale(1); }
+  }
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-muted); font-size: 1.3rem; line-height: 1;
+  }
+  .modal-close:hover { color: var(--ink); }
+  .modal h3 { font-size: 1.6rem; margin-bottom: 0.5rem; color: var(--ink); }
+  .modal-sub { color: var(--ink-muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+  .modal-provider-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+  }
+  .modal-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700; font-size: 1.1rem; color: #fff;
+    flex-shrink: 0;
+  }
+  .modal-details .name { font-weight: 600; font-size: 1rem; color: var(--ink); }
+  .modal-details .meta { font-size: 0.8rem; color: var(--ink-muted); }
+  .modal-field { margin-bottom: 0.875rem; }
+  .modal-field label { display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 0.4rem; }
+  .modal-field input, .modal-field textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    padding: 0.7rem 0.9rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal-field input:focus, .modal-field textarea:focus { border-color: var(--blue-bright); }
+  .modal-field textarea { resize: vertical; min-height: 80px; }
+  .success-msg { display: none; text-align: center; padding: 1rem; }
+  .success-msg svg { margin: 0 auto 1rem; display: block; }
+  .success-msg h4 { font-size: 1.4rem; margin-bottom: 0.5rem; color: var(--ink); }
+  .success-msg p { color: var(--ink-muted); font-size: 0.875rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV — reutilizar este bloco (nav-inner) em todas as páginas futuras -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <svg class="logo-icon" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text">easy peasy <span>diesel</span></span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#como-funciona">Como funciona</a></li>
+      <li><a href="busca.html">Prestadores</a></li>
+      <li><a href="#solicitar">Solicitar serviço</a></li>
+      <li><a href="busca.html" class="nav-cta">Encontrar máquina</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <svg class="hero-coastline" viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M600 40 C 480 10, 430 90, 470 150 C 510 210, 400 230, 360 190 C 310 140, 250 180, 260 250 C 270 320, 150 300, 120 360 C 95 410, 130 460, 60 500"
+      stroke="#1A4ED8" stroke-width="2" fill="none"/>
+    <path d="M600 110 C 500 90, 460 150, 500 200 C 535 245, 440 270, 400 235 C 355 195, 300 230, 310 290 C 320 350, 210 340, 185 390"
+      stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.6"/>
+  </svg>
+  <div class="container">
+    <div class="hero-content">
+    <div class="hero-badge">Grande Florianópolis</div>
+    <h1>Máquinas pesadas,<br><span class="accent">na hora certa.</span></h1>
+    <p>Precisa de escavadeira, guindaste ou trator pra obra? Veja quem está disponível agora em Florianópolis, Palhoça e São José, sem ligar pra cinco empresas até achar uma livre.</p>
+    <div class="hero-actions">
+      <a href="#solicitar" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Solicitar serviço
+      </a>
+      <a href="#prestadores" class="btn-ghost">Ver prestadores no mapa</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num" id="statProviders">26+</div>
+        <div class="stat-label">Prestadores ativos</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">6</div>
+        <div class="stat-label">Tipos de máquinas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Cidades atendidas</div>
+      </div>
+    </div>
+  </div><!-- /hero-content -->
+  </div><!-- /container -->
+</section>
+
+<!-- COMO FUNCIONA — cartões informativos (sem hover: não têm ação de clique) -->
+<section id="como-funciona">
+  <div class="container">
+    <div class="section-label">Processo simplificado</div>
+    <h2 class="section-title">Do pedido à obra<br>em 3 passos.</h2>
+    <p class="section-subtitle">Você descreve o que precisa, vê quem está disponível na sua região e já fala direto com o prestador — sem intermediário no meio.</p>
+    <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      <h3>Descreva o serviço</h3>
+      <p>Diga o que precisa: tipo de máquina, local e datas. Tire uma foto da área se quiser — fica mais fácil pro prestador entender o serviço.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <h3>Veja quem está disponível</h3>
+      <p>O mapa mostra quem está por perto, a avaliação de quem já contratou e se dá pra pegar o serviço ainda essa semana.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3>Combine direto com o prestador</h3>
+      <p>Você troca mensagem com quem vai fazer o serviço, acerta valor e prazo, e fecha — sem passar por atendente ou central.</p>
+    </div>
+  </div><!-- /steps-grid -->
+  </div><!-- /container -->
+</section>
+
+<!-- PRESTADORES NO MAPA -->
+<section id="prestadores">
+  <div class="container">
+    <div class="section-label">Grande Florianópolis</div>
+    <h2 class="section-title">Prestadores próximos de você</h2>
+    <p class="section-subtitle">Veja quem está disponível agora em Florianópolis, Palhoça e São José. Clique para ver perfil completo.</p>
+    <div class="map-section-layout">
+      <div id="map"></div>
+      <div class="provider-list" id="providerList"></div>
+    </div>
+  </div><!-- /container -->
+</section>
+
+<!-- SOLICITAR SERVIÇO -->
+<section id="solicitar">
+  <div class="container">
+  <div class="solicitar-layout">
+    <div>
+      <div class="section-label">Solicitar serviço</div>
+      <h2 class="section-title">Mostre o local, encontre a máquina.</h2>
+      <p class="section-subtitle">Tire uma foto da área onde o serviço será realizado e descreva o que precisa. Quanto mais detalhes, mais rápido você recebe propostas.</p>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:1rem; margin-top:2rem;">
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="width:28px; height:28px; border-radius:50%; background:var(--blue-pale); border:1px solid rgba(26,78,216,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.75rem; font-weight:700; color:var(--blue-main);">✓</span>
+          <span style="color:var(--ink-muted); font-size:0.9rem;">Dá pra olhar os prestadores disponíveis sem precisar criar conta</span>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="width:28px; height:28px; border-radius:50%; background:var(--blue-pale); border:1px solid rgba(26,78,216,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.75rem; font-weight:700; color:var(--blue-main);">✓</span>
+          <span style="color:var(--ink-muted); font-size:0.9rem;">As avaliações são de gente que já contratou, não é nota inventada</span>
+        </li>
+        <li style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="width:28px; height:28px; border-radius:50%; background:var(--blue-pale); border:1px solid rgba(26,78,216,0.2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:0.75rem; font-weight:700; color:var(--blue-main);">✓</span>
+          <span style="color:var(--ink-muted); font-size:0.9rem;">O pedido inteiro é feito por aqui, sem precisar telefonar</span>
+        </li>
+      </ul>
+    </div>
+    <div class="upload-widget">
+      <h3 style="font-size:1.4rem; margin-bottom:1.5rem; color:var(--ink);">Novo pedido de serviço</h3>
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="previewPhoto(event)">
+        <svg class="upload-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="12" fill="#E3ECFF"/>
+          <path d="M24 30V18M24 18l-4 4M24 18l4 4" stroke="#1A4ED8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M14 34h20" stroke="#1A4ED8" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <strong id="uploadLabel">Foto da área de serviço</strong>
+        <p id="uploadHint">Clique para tirar ou enviar uma foto do local</p>
+        <img id="previewImg" class="upload-preview" alt="Preview">
+      </div>
+      <div class="form-group">
+        <label>Tipo de máquina</label>
+        <select id="reqMachine" required>
+          <option value="" disabled selected>Selecione o equipamento</option>
+          <option value="Escavadeira">Escavadeira</option>
+          <option value="Retroescavadeira">Retroescavadeira</option>
+          <option value="Guindaste">Guindaste</option>
+          <option value="Trator Agrícola">Trator Agrícola</option>
+          <option value="Cam. Basculante">Caminhão Basculante</option>
+          <option value="Rolo Compactador">Rolo Compactador</option>
+          <option value="Motoniveladora">Motoniveladora</option>
+          <option value="">Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Localização do serviço</label>
+        <input type="text" placeholder="Ex: São José, Kobrasol, Rua das Palmeiras 200">
+      </div>
+      <div class="form-group">
+        <label>Descreva o serviço</label>
+        <textarea placeholder="Ex: Preciso escavar fundação de 6x8m, profundidade de 1,5m, acesso pela lateral da casa..."></textarea>
+      </div>
+      <button class="btn-primary" style="width:100%; justify-content:center;" onclick="showSolicForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+        Enviar solicitação
+      </button>
+      <p style="text-align:center; color:var(--ink-dim); font-size:0.75rem; margin-top:1rem;">* Site demonstrativo — nenhum dado é enviado</p>
+    </div>
+  </div><!-- /solicitar-layout -->
+  </div><!-- /container -->
+</section>
+
+<!-- FOOTER — reutilizar este bloco em todas as páginas futuras -->
+<footer>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" style="text-decoration:none">
+      <svg width="32" height="32" viewBox="0 0 80 80" fill="none">
+        <line x1="18" y1="8" x2="8" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <line x1="30" y1="8" x2="20" y2="58" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M42 14 C74 14 74 66 42 66" stroke="#1A4ED8" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="logo-text" style="font-size:1rem;">easy peasy <span>diesel</span></span>
+    </a>
+    <span class="footer-copy">© 2026 Easy Peasy Diesel · Projeto demonstrativo · <a href="#">Grande Florianópolis, SC</a></span>
+    <span class="footer-tagline">A força que sua obra precisa, na hora que você precisa</span>
+  </div>
+</footer>
+
+<!-- MODAL CONTATO PRESTADOR -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('modalOverlay').classList.remove('open')">✕</button>
+    <div id="modalContent"></div>
+    <div class="success-msg" id="successMsg">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="28" fill="#E3ECFF"/><path d="M18 28l7 7 13-14" stroke="#0E7C4A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h4>Solicitação enviada!</h4>
+      <p>Em breve o prestador entrará em contato.<br>Este é um site demonstrativo.</p>
+      <a href="#" id="trackLink" style="display:inline-block; margin-top:1rem; font-size:0.85rem; font-weight:600; color:var(--blue-main); text-decoration:none;">Acompanhar minha solicitação →</a>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>
+/* ═══════════════════════════════════════════════
+   SEGURANÇA — Proteções client-side
+   ═══════════════════════════════════════════════ */
+
+// Sanitiza qualquer string antes de inserir no DOM (previne XSS)
+function sanitize(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+// Detecta tentativas de abertura via iframe (anti-clickjacking JS como backup)
+if (window.top !== window.self) {
+  document.body.innerHTML = '';
+  window.top.location = window.self.location;
+}
+
+const PROVIDERS = [
+  {
+    id: 1, name: "Marcelo Escavações", initials: "ME", color: "#1A4ED8",
+    city: "Florianópolis", neighborhood: "Itacorubi",
+    machine: "Escavadeira", rating: 4.9, reviews: 51,
+    available: true,
+    lat: -27.5810, lng: -48.5040,
+    desc: "Especialista em fundações e terraplanagem. 14 anos de experiência na Ilha."
+  },
+  {
+    id: 2, name: "Cristina Guindastes", initials: "CG", color: "#7C3AED",
+    city: "São José", neighborhood: "Kobrasol",
+    machine: "Guindaste", rating: 4.7, reviews: 33,
+    available: true,
+    lat: -27.6136, lng: -48.6364,
+    desc: "Guindastes para obras industriais e residenciais de grande porte."
+  },
+  {
+    id: 5, name: "Simone Transportes", initials: "ST", color: "#9D174D",
+    city: "São José", neighborhood: "Campinas",
+    machine: "Cam. Basculante", rating: 4.9, reviews: 76,
+    available: true,
+    lat: -27.5980, lng: -48.6180,
+    desc: "Caminhão basculante para entulho, terra, brita e materiais de construção."
+  },
+  {
+    id: 6, name: "Roberto Pesados", initials: "RP", color: "#065F46",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.5, reviews: 14,
+    available: true,
+    lat: -27.6400, lng: -48.6680,
+    desc: "Escavadeira hidráulica, cortes de talude e limpeza de terreno."
+  },
+  {
+    id: 7, name: "Vanderlei Compactação", initials: "VC", color: "#1D4ED8",
+    city: "Florianópolis", neighborhood: "Rio Tavares",
+    machine: "Rolo Compactador", rating: 4.7, reviews: 19,
+    available: true,
+    lat: -27.6150, lng: -48.4850,
+    desc: "Compactação de solos para pavimentação e aterros. Atende obras públicas e privadas."
+  },
+  {
+    id: 8, name: "Juliana Fretes", initials: "JF", color: "#92400E",
+    city: "São José", neighborhood: "Barreiros",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 40,
+    available: false,
+    lat: -27.5850, lng: -48.6050,
+    desc: "Transporte de areia, pedra e terra para construção civil. Frota própria."
+  },
+  {
+    id: 9, name: "Ednaldo Guindastes", initials: "EG", color: "#1E3A5F",
+    city: "Florianópolis", neighborhood: "Estreito",
+    machine: "Guindaste", rating: 5.0, reviews: 17,
+    available: true,
+    lat: -27.5910, lng: -48.5600,
+    desc: "Guindaste telescópico para montagem de estruturas metálicas e içamento de cargas pesadas."
+  },
+  {
+    id: 10, name: "Patrícia Escavações", initials: "PE", color: "#166534",
+    city: "Palhoça", neighborhood: "Ponte do Imaruim",
+    machine: "Retroescavadeira", rating: 4.4, reviews: 11,
+    available: true,
+    lat: -27.6420, lng: -48.6600,
+    desc: "Retroescavadeira para obras residenciais, valas de saneamento e fundações."
+  },
+  {
+    id: 11, name: "Marcão Terraplanagem", initials: "MT", color: "#7E1D1D",
+    city: "São José", neighborhood: "Forquilhinhas",
+    machine: "Motoniveladora", rating: 4.8, reviews: 47,
+    available: true,
+    lat: -27.5700, lng: -48.6250,
+    desc: "Motoniveladora para nivelar e conformar superfícies em loteamentos e vias vicinais."
+  },
+  {
+    id: 12, name: "Renata Fundações", initials: "RF", color: "#5B21B6",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.8, reviews: 29,
+    available: true,
+    lat: -27.5975, lng: -48.5475,
+    desc: "Escavação para fundações residenciais e comerciais no centro da capital."
+  },
+  {
+    id: 13, name: "Osmar Guindastes", initials: "OG", color: "#0369A1",
+    city: "Florianópolis", neighborhood: "Trindade",
+    machine: "Guindaste", rating: 4.6, reviews: 22,
+    available: true,
+    lat: -27.5865, lng: -48.5230,
+    desc: "Guindaste para obras próximas à UFSC e região da Trindade."
+  },
+  {
+    id: 14, name: "Beatriz Terraplanagem", initials: "BT", color: "#A16207",
+    city: "Florianópolis", neighborhood: "Agronômica",
+    machine: "Retroescavadeira", rating: 4.9, reviews: 63,
+    available: false,
+    lat: -27.5820, lng: -48.5330,
+    desc: "Retroescavadeira para valas, fundações e limpeza de terreno."
+  },
+  {
+    id: 15, name: "Wagner Máquinas", initials: "WM", color: "#4C1D95",
+    city: "Florianópolis", neighborhood: "Córrego Grande",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 18,
+    available: true,
+    lat: -27.5930, lng: -48.5100,
+    desc: "Trator para roçagem e preparo de terreno em áreas residenciais."
+  },
+  {
+    id: 16, name: "Douglas Basculantes", initials: "DB", color: "#B91C1C",
+    city: "Florianópolis", neighborhood: "Capoeiras",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 55,
+    available: true,
+    lat: -27.5940, lng: -48.5580,
+    desc: "Transporte de entulho e material de construção no Continente."
+  },
+  {
+    id: 17, name: "Rosana Escavações", initials: "RE", color: "#0891B2",
+    city: "Florianópolis", neighborhood: "Ingleses",
+    machine: "Escavadeira", rating: 5.0, reviews: 12,
+    available: true,
+    lat: -27.4300, lng: -48.3940,
+    desc: "Atendimento ao norte da ilha — Ingleses, Rio Vermelho e Santo Antônio."
+  },
+  {
+    id: 18, name: "Elton Pesados", initials: "EP", color: "#78350F",
+    city: "Florianópolis", neighborhood: "Canasvieiras",
+    machine: "Rolo Compactador", rating: 4.4, reviews: 27,
+    available: false,
+    lat: -27.4270, lng: -48.4480,
+    desc: "Compactação de solo para pavimentação de acessos e estacionamentos."
+  },
+  {
+    id: 19, name: "Priscila Guindastes", initials: "PG", color: "#6D28D9",
+    city: "Florianópolis", neighborhood: "Campeche",
+    machine: "Guindaste", rating: 4.8, reviews: 34,
+    available: true,
+    lat: -27.6750, lng: -48.4790,
+    desc: "Guindaste para montagem de estruturas na região sul da ilha."
+  },
+  {
+    id: 20, name: "Anderson Terraplanagem", initials: "AT", color: "#155E75",
+    city: "Palhoça", neighborhood: "Passa Vinte",
+    machine: "Retroescavadeira", rating: 4.6, reviews: 41,
+    available: true,
+    lat: -27.6180, lng: -48.6280,
+    desc: "Terraplanagem para loteamentos e obras residenciais em Palhoça."
+  },
+  {
+    id: 21, name: "Kelly Máquinas", initials: "KM", color: "#9333EA",
+    city: "Palhoça", neighborhood: "Bela Vista",
+    machine: "Motoniveladora", rating: 4.9, reviews: 20,
+    available: true,
+    lat: -27.6320, lng: -48.6550,
+    desc: "Nivelamento de terrenos e vias em condomínios e loteamentos."
+  },
+  {
+    id: 23, name: "Camila Basculantes", initials: "CB", color: "#3F6212",
+    city: "São José", neighborhood: "Ipiranga",
+    machine: "Cam. Basculante", rating: 4.7, reviews: 48,
+    available: true,
+    lat: -27.6050, lng: -48.6280,
+    desc: "Frota própria para transporte de areia, brita e terra."
+  },
+  {
+    id: 24, name: "Nilton Guindastes", initials: "NG", color: "#831843",
+    city: "São José", neighborhood: "Praia Comprida",
+    machine: "Guindaste", rating: 4.3, reviews: 25,
+    available: false,
+    lat: -27.5890, lng: -48.6230,
+    desc: "Guindaste para montagem industrial e residencial."
+  },
+  {
+    id: 25, name: "Leandro Escavações", initials: "LE", color: "#C2410C",
+    city: "Palhoça", neighborhood: "Centro",
+    machine: "Escavadeira", rating: 4.7, reviews: 24,
+    available: true,
+    lat: -27.6380, lng: -48.6660,
+    desc: "Escavadeira para obras residenciais e comerciais no centro de Palhoça."
+  },
+  {
+    id: 26, name: "Fernanda Terraplanagem", initials: "FT", color: "#0F766E",
+    city: "Palhoça", neighborhood: "Frei Damião",
+    machine: "Retroescavadeira", rating: 4.8, reviews: 37,
+    available: true,
+    lat: -27.6230, lng: -48.6450,
+    desc: "Retroescavadeira para fundações, valas e limpeza de terreno."
+  },
+  {
+    id: 27, name: "Gustavo Máquinas", initials: "GM", color: "#B45309",
+    city: "Palhoça", neighborhood: "Ambrósio",
+    machine: "Trator Agrícola", rating: 4.5, reviews: 15,
+    available: true,
+    lat: -27.6350, lng: -48.6350,
+    desc: "Trator agrícola para roçagem, preparo de terreno e pequenos aterros."
+  },
+  {
+    id: 28, name: "Tatiane Guindastes", initials: "TG", color: "#DB2777",
+    city: "Florianópolis", neighborhood: "Centro",
+    machine: "Guindaste", rating: 4.9, reviews: 28,
+    available: true,
+    lat: -27.5960, lng: -48.5460,
+    desc: "Guindaste para içamento de estruturas e montagens no centro da capital."
+  },
+  {
+    id: 29, name: "Bruno Basculantes", initials: "BB", color: "#EA580C",
+    city: "São José", neighborhood: "Serraria",
+    machine: "Cam. Basculante", rating: 4.6, reviews: 44,
+    available: true,
+    lat: -27.5750, lng: -48.6420,
+    desc: "Caminhão basculante para transporte de terra, areia e entulho."
+  }
+];
+
+let map, markers = [], activeId = null;
+
+function initMap() {
+  map = L.map('map', { zoomControl: true, scrollWheelZoom: false }).setView([-27.58, -48.53], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+  }).addTo(map);
+
+  PROVIDERS.forEach(p => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:36px; height:36px; border-radius:50%;
+        background:${p.color}; border:2px solid ${p.available ? '#0E7C4A' : '#C4381F'};
+        display:flex; align-items:center; justify-content:center;
+        font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:0.75rem;
+        color:#fff; box-shadow: 0 2px 8px rgba(14,27,46,0.35);
+        cursor:pointer; transition: transform 0.2s;
+      ">${p.initials}</div>`,
+      iconSize: [36, 36], iconAnchor: [18, 18]
+    });
+    const marker = L.marker([p.lat, p.lng], { icon }).addTo(map);
+    marker.bindPopup(`<div style="font-family:sans-serif;min-width:160px"><strong>${p.name}</strong><br><span style="font-size:12px;color:#666">${p.machine} · ${p.city}</span><br><span style="font-size:12px;color:${p.available ? '#0E7C4A':'#C4381F'}">${p.available ? '● Disponível':'● Indisponível'}</span></div>`);
+    marker.providerId = p.id;
+    marker.on('click', function() { selectProvider(this.providerId); });
+    markers.push({ id: p.id, marker });
+  });
+}
+
+function renderList() {
+  const list = document.getElementById('providerList');
+  list.innerHTML = '';
+  PROVIDERS.forEach(p => {
+    const stars = '★'.repeat(Math.floor(p.rating)) + (p.rating % 1 >= 0.5 ? '½' : '');
+    const div = document.createElement('div');
+    div.className = 'provider-card';
+    div.id = 'pcard-' + p.id;
+    div.dataset.id = p.id;
+    div.innerHTML = `
+      <div class="provider-head">
+        <div class="provider-avatar" style="background:${p.color}">${p.initials}</div>
+        <div>
+          <div class="provider-info-name">${p.name}</div>
+          <div class="provider-info-loc">📍 ${p.neighborhood}, ${p.city}</div>
+        </div>
+      </div>
+      <div class="provider-meta">
+        <span class="tag">${p.machine}</span>
+        <span class="stars">${stars} <span style="color:var(--ink-muted);font-size:0.7rem">${p.rating} (${p.reviews})</span></span>
+        <span class="avail ${p.available ? '' : 'busy'}"><span class="avail-dot"></span>${p.available ? 'Disponível' : 'Ocupado'}</span>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* Listener único e delegado: o id do prestador é lido do próprio elemento
+   clicado/tocado no momento da interação — nunca de uma variável guardada
+   de antes. É isso que evita o card errado abrir no toque (mobile). */
+function bindProviderListClicks() {
+  document.getElementById('providerList').addEventListener('click', (e) => {
+    const card = e.target.closest('[data-id]');
+    if (!card) return;
+    selectProvider(Number(card.dataset.id));
+  });
+}
+
+function selectProvider(id) {
+  if (activeId) document.getElementById('pcard-' + activeId)?.classList.remove('active');
+  activeId = id;
+  const card = document.getElementById('pcard-' + id);
+  card?.classList.add('active');
+  card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const m = markers.find(x => x.id === id);
+  if (m) { map.setView(m.marker.getLatLng(), 14, { animate: true }); m.marker.openPopup(); }
+  const p = PROVIDERS.find(x => x.id === id);
+  if (p) openModal(p);
+}
+
+function openModal(p) {
+  const stars = '★'.repeat(Math.floor(p.rating));
+  document.getElementById('successMsg').style.display = 'none';
+  document.getElementById('modalContent').style.display = '';
+  // sanitize() aplicado em todos os campos antes de inserir no DOM
+  document.getElementById('modalContent').innerHTML = `
+    <h3 style="font-size:1.5rem; margin-bottom:0.25rem">Contatar prestador</h3>
+    <p class="modal-sub">Envie uma mensagem diretamente para ${sanitize(p.name)}</p>
+    <div class="modal-provider-head">
+      <div class="modal-avatar" style="background:${sanitize(p.color)}">${sanitize(p.initials)}</div>
+      <div class="modal-details">
+        <div class="name">${sanitize(p.name)}</div>
+        <div class="meta">${sanitize(p.machine)} · <span style="color:#B7791F">${stars}</span> ${sanitize(String(p.rating))} (${sanitize(String(p.reviews))} avaliações)</div>
+        <div class="meta" style="margin-top:2px">${sanitize(p.desc)}</div>
+      </div>
+    </div>
+    <div class="modal-field"><label>Seu nome</label><input type="text" placeholder="Como devemos te chamar?" maxlength="80" autocomplete="off"></div>
+    <div class="modal-field"><label>Telefone ou WhatsApp</label><input type="text" placeholder="(48) 99999-9999" maxlength="20" autocomplete="off"></div>
+    <div class="modal-field"><label>Descreva o serviço</label><textarea placeholder="Descreva brevemente o que você precisa..." maxlength="500"></textarea></div>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem" onclick="submitContact(${p.id})">
+      Enviar mensagem
+    </button>
+    <a href="prestador.html?id=${p.id}" style="display:block; text-align:center; margin-top:0.75rem; font-size:0.8rem; color:var(--blue-main); text-decoration:none;">
+      Ver perfil completo →
+    </a>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function submitContact(id) {
+  document.getElementById('modalContent').style.display = 'none';
+  document.getElementById('successMsg').style.display = 'block';
+  document.getElementById('trackLink').href = 'acompanhamento.html?id=' + id;
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay'))
+    document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function showSolicForm() {
+  const select = document.getElementById('reqMachine');
+  const machine = select.value;
+
+  if (!machine) {
+    select.reportValidity();
+    select.style.borderColor = 'var(--red)';
+    setTimeout(() => { select.style.borderColor = ''; }, 2000);
+    return;
+  }
+
+  /* prioriza prestador disponível E do tipo de máquina pedido;
+     só cai pra outro tipo se não existir ninguém daquele tipo na base */
+  let candidates = PROVIDERS.filter(x => x.machine === machine && x.available);
+  if (!candidates.length) candidates = PROVIDERS.filter(x => x.machine === machine);
+  if (!candidates.length) candidates = PROVIDERS.filter(x => x.available);
+  if (!candidates.length) return;
+
+  const p = candidates[Math.floor(Math.random() * candidates.length)];
+  openModal(p);
+}
+
+function previewPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('previewImg');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    document.getElementById('uploadLabel').textContent = '✓ Foto adicionada';
+    document.getElementById('uploadHint').textContent = 'Clique para trocar';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('uploadArea').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.style.borderColor = '#1A4ED8'; });
+document.getElementById('uploadArea').addEventListener('dragleave', e => { e.currentTarget.style.borderColor = '#C2CEE0'; });
+document.getElementById('uploadArea').addEventListener('drop', e => {
+  e.preventDefault(); e.currentTarget.style.borderColor = '#C2CEE0';
+  const f = e.dataTransfer.files[0];
+  if (f) { document.getElementById('fileInput').files = e.dataTransfer.files; previewPhoto({ target: { files: [f] } }); }
+});
+
+function updateStats() {
+  document.getElementById('statProviders').textContent = PROVIDERS.length + '+';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  try { initMap(); } catch (e) {
+    document.getElementById('map').innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:0.85rem;text-align:center;padding:1rem">Mapa indisponível no momento</div>';
+  }
+  renderList();
+  bindProviderListClicks();
+  updateStats();
+});
+</script>
+</body>
+</html>
